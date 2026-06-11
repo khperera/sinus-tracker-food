@@ -498,6 +498,19 @@
       outline: none;
     }
 
+    .med-anchor {
+      padding: 0.2rem 0.3rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.72rem;
+      outline: none;
+    }
+
+    .med-anchor:disabled { opacity: 0.4; }
+
     .med-auto {
       display: inline-flex;
       align-items: center;
@@ -960,6 +973,20 @@
       <input type="text" id="medInput" placeholder="Add a medication…" autocomplete="off">
       <button class="btn-med-add" id="addMedBtn">Add</button>
     </div>
+    <div class="when-row">
+      <label for="medWhen">Dose</label>
+      <select id="medWhen" class="when-select" title="When the next 💊 tap should be logged">
+        <option value="0" selected>Now</option>
+        <option value="0.5">30 min ago</option>
+        <option value="1">1 hour ago</option>
+        <option value="2">2 hours ago</option>
+        <option value="3">3 hours ago</option>
+        <option value="4">4 hours ago</option>
+        <option value="6">6 hours ago</option>
+        <option value="8">8 hours ago</option>
+        <option value="12">12 hours ago</option>
+      </select>
+    </div>
     <div class="med-list" id="medList"></div>
     <p class="med-stack-note" id="medStackNote"></p>
   </div>
@@ -1118,9 +1145,9 @@ function saveExp(hoursBefore, items) {
   saveList(EXP_KEY, log);
 }
 
-function saveDose(med) {
+function saveDose(med, hoursAgo = 0) {
   const log = loadDoses();
-  log.push({ id: uid(), timestamp: new Date().toISOString(), med });
+  log.push({ id: uid(), timestamp: new Date(Date.now() - hoursAgo * 3600000).toISOString(), med });
   saveList(DOSE_KEY, log);
 }
 
@@ -1460,32 +1487,78 @@ function lastDoseTime(medName) {
   return last;
 }
 
+// Snap a "HH:MM" time of day onto the local calendar day of `refMs`.
+function atTimeOfDay(refMs, hhmm) {
+  const [h, mi] = String(hhmm).split(':').map(Number);
+  const d = new Date(refMs);
+  d.setHours(h || 0, mi || 0, 0, 0);
+  return +d;
+}
+
+// First scheduled slot for a time-anchored med: the anchor time on the day of
+// the earliest logged dose, or the day the med was added if none logged yet.
+function firstScheduledSlot(m) {
+  let earliest = null;
+  loadDoses().forEach(d => {
+    if (d.med !== m.name) return;
+    const t = +new Date(d.timestamp);
+    if (earliest == null || t < earliest) earliest = t;
+  });
+  const ref = earliest != null ? earliest : (m.addedAt ? +new Date(m.addedAt) : Date.now());
+  return atTimeOfDay(ref, m.anchorTime);
+}
+
+// Most recent scheduled slot at or before `now` for a time-anchored med.
+function lastScheduledSlot(m, now = Date.now()) {
+  if (!m.cadenceDays || !m.anchorTime) return null;
+  const first = firstScheduledSlot(m);
+  if (first > now) return null;
+  const step = m.cadenceDays * DAY;
+  return first + Math.floor((now - first) / step) * step;
+}
+
 function isDue(m) {
   if (!m.cadenceDays) return false;
   const last = lastDoseTime(m.name);
+  if (m.anchorTime) {
+    const slot = lastScheduledSlot(m);
+    if (slot == null) return false; // schedule hasn't started yet
+    return last == null || last < slot;
+  }
   if (last == null) return true; // never dosed — due to start
   return Date.now() - last >= m.cadenceDays * DAY;
 }
 
-// "Auto" meds get dose events backfilled at their scheduled times since the
-// last logged dose. The schedule anchors on a real dose, so the first 💊 tap
-// keeps the auto-trail aligned with when the user actually takes it.
+// "Auto" meds get dose events backfilled at their scheduled times. By default
+// the schedule anchors on the last real dose, so the first 💊 tap keeps the
+// auto-trail aligned with when the user actually takes it. When a med has a
+// time-of-day anchor, slots instead land at that clock time each cadence
+// period, so no manual dose is needed to start the schedule.
 function autoLogScheduledDoses() {
   const doses = loadDoses();
   let added = 0;
   loadMeds().forEach(m => {
     if (!m.autoLog || !m.cadenceDays) return;
-    let last = null;
-    doses.forEach(d => {
-      if (d.med !== m.name) return;
-      const t = +new Date(d.timestamp);
-      if (last == null || t > last) last = t;
-    });
-    if (last == null) return;
     const step = m.cadenceDays * DAY;
-    for (let t = last + step; t <= Date.now() && added < 500; t += step) {
-      doses.push({ id: uid(), timestamp: new Date(t).toISOString(), med: m.name, auto: true });
-      added++;
+    const times = doses.filter(d => d.med === m.name).map(d => +new Date(d.timestamp));
+    if (m.anchorTime) {
+      const earliest = times.length ? Math.min(...times) : null;
+      const ref = earliest != null ? earliest : (m.addedAt ? +new Date(m.addedAt) : Date.now());
+      const first = atTimeOfDay(ref, m.anchorTime);
+      for (let t = first; t <= Date.now() && added < 500; t += step) {
+        // Skip a slot already covered by a logged dose (e.g. a manual tap).
+        if (times.some(x => Math.abs(x - t) < step / 2)) continue;
+        doses.push({ id: uid(), timestamp: new Date(t).toISOString(), med: m.name, auto: true });
+        times.push(t);
+        added++;
+      }
+    } else {
+      const last = times.length ? Math.max(...times) : null;
+      if (last == null) return;
+      for (let t = last + step; t <= Date.now() && added < 500; t += step) {
+        doses.push({ id: uid(), timestamp: new Date(t).toISOString(), med: m.name, auto: true });
+        added++;
+      }
     }
   });
   if (added) saveList(DOSE_KEY, doses);
@@ -1507,7 +1580,8 @@ function renderMeds() {
             <select class="med-cad" data-cad="${m.id}" title="How often this med repeats">
               ${CADENCE_OPTS.map(([v, l]) => `<option value="${v}"${String(m.cadenceDays ?? '') === v ? ' selected' : ''}>${l}</option>`).join('')}
             </select>
-            <label class="med-auto" title="Log doses automatically on this schedule, anchored to your last logged dose">
+            <input type="time" class="med-anchor" data-anchor="${m.id}" value="${m.anchorTime || ''}"${m.cadenceDays ? '' : ' disabled'} title="Anchor doses to a time of day — leave blank to anchor to your last logged dose" aria-label="anchor time for ${escapeHtml(m.name)}">
+            <label class="med-auto" title="Log doses automatically on this schedule, anchored to a time of day or your last logged dose">
               <input type="checkbox" data-auto="${m.id}"${m.autoLog ? ' checked' : ''}${m.cadenceDays ? '' : ' disabled'}>auto
             </label>
             <button class="med-dose${due ? ' due' : ''}" data-dose="${escapeHtml(m.name)}" title="Log a dose of ${escapeHtml(m.name)} now" aria-label="log dose of ${escapeHtml(m.name)}">💊</button>
@@ -1533,7 +1607,21 @@ medList.addEventListener('change', e => {
     const m = meds.find(m => m.id === e.target.dataset.cad);
     if (!m) return;
     m.cadenceDays = +e.target.value || null;
-    if (!m.cadenceDays) m.autoLog = false;
+    if (!m.cadenceDays) {
+      m.autoLog = false;
+      m.anchorTime = null;
+      // Recurrence off — drop the synthetic auto-logged doses it had projected.
+      saveList(DOSE_KEY, loadDoses().filter(d => !(d.med === m.name && d.auto)));
+    }
+    saveMeds(meds);
+    autoLogScheduledDoses();
+    renderMeds();
+    refreshChart();
+    renderRecent();
+  } else if (e.target.dataset.anchor) {
+    const m = meds.find(m => m.id === e.target.dataset.anchor);
+    if (!m) return;
+    m.anchorTime = e.target.value || null;
     saveMeds(meds);
     autoLogScheduledDoses();
     renderMeds();
@@ -1544,8 +1632,8 @@ medList.addEventListener('change', e => {
     if (!m) return;
     m.autoLog = e.target.checked;
     saveMeds(meds);
-    if (m.autoLog && lastDoseTime(m.name) == null) {
-      alert(`Auto-logging for ${m.name} starts from your first logged dose — tap 💊 once to anchor the schedule.`);
+    if (m.autoLog && !m.anchorTime && lastDoseTime(m.name) == null) {
+      alert(`Auto-logging for ${m.name} starts from your first logged dose — tap 💊 once to anchor the schedule, or set a time of day to anchor it.`);
     }
     const added = autoLogScheduledDoses();
     renderMeds();
@@ -1571,7 +1659,9 @@ medInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDe
 medList.addEventListener('click', e => {
   const dose = e.target.closest('.med-dose');
   if (dose) {
-    saveDose(dose.dataset.dose);
+    const whenSel = document.getElementById('medWhen');
+    saveDose(dose.dataset.dose, +whenSel.value || 0);
+    whenSel.value = '0'; // reset to "Now" so the next tap isn't silently back-dated
     dose.textContent = '✓';
     setTimeout(renderMeds, 900);
     rerenderAll();
@@ -1579,8 +1669,18 @@ medList.addEventListener('click', e => {
   }
   const del = e.target.closest('.med-x');
   if (del) {
-    saveMeds(loadMeds().filter(m => m.id !== del.dataset.del));
+    const meds = loadMeds();
+    const m = meds.find(x => x.id === del.dataset.del);
+    if (!m) return;
+    const autoCount = loadDoses().filter(d => d.med === m.name && d.auto).length;
+    const msg = autoCount
+      ? `Remove ${m.name}? This also clears ${autoCount} auto-logged dose${autoCount === 1 ? '' : 's'} from its schedule. Manually logged doses are kept.`
+      : `Remove ${m.name}?`;
+    if (!confirm(msg)) return;
+    saveMeds(meds.filter(x => x.id !== m.id));
+    if (autoCount) saveList(DOSE_KEY, loadDoses().filter(d => !(d.med === m.name && d.auto)));
     renderMeds();
+    rerenderAll();
     return;
   }
   const item = e.target.closest('.med-item');
@@ -2228,6 +2328,7 @@ importFile.addEventListener('change', async () => {
       if (local && local.cadenceDays == null) {
         local.cadenceDays = inc.cadenceDays;
         local.autoLog = !!inc.autoLog;
+        local.anchorTime = inc.anchorTime || null;
         touched = true;
       }
     });
