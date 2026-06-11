@@ -1728,6 +1728,7 @@ document.getElementById('logPainBtn').addEventListener('click', () => {
 });
 
 document.getElementById('logExposureBtn').addEventListener('click', () => {
+  if (!items.length) return;
   saveExp(HOURS_VALUES[+hoursSlider.value], [...items]);
   items = [];
   renderChips();
