@@ -419,7 +419,176 @@
     .ri-pain { font-weight: 700; }
     .ri-items { color: #92400e; }
     @media (prefers-color-scheme: dark) { .ri-items { color: #fb923c; } }
+    .ri-meds { color: #0369a1; font-size: 0.75rem; }
+    @media (prefers-color-scheme: dark) { .ri-meds { color: #38bdf8; } }
     .empty    { color: var(--muted); font-size: 0.8rem; font-style: italic; padding: 0.25rem 0; }
+
+    /* ── Medications ─────────────────────────────────────────────── */
+
+    .med-input-row { display: flex; gap: 0.5rem; }
+
+    .med-input-row input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .med-input-row input:focus { border-color: #0ea5e9; background: var(--card); }
+    .med-input-row input::placeholder { color: var(--muted); }
+
+    .btn-med-add {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-med-add:hover { opacity: 0.92; }
+    .btn-med-add:active { transform: scale(0.96); }
+
+    .med-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.875rem;
+    }
+
+    .med-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+
+    .med-item .med-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.5;
+      transition: all 0.15s;
+    }
+
+    .med-item.active {
+      background: #ecfdf5;
+      border-color: #6ee7b7;
+      color: #047857;
+    }
+
+    .med-item.active .med-dot { background: #10b981; opacity: 1; }
+
+    @media (prefers-color-scheme: dark) {
+      .med-item.active { background: #064e3b; border-color: #047857; color: #6ee7b7; }
+      .med-item.active .med-dot { background: #34d399; }
+    }
+
+    .med-x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: none;
+      background: var(--track);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.1s;
+    }
+
+    .med-x:hover { background: #fca5a5; color: #7f1d1d; }
+
+    .med-stack-note {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.625rem;
+      line-height: 1.5;
+    }
+
+    /* ── Correlation matrix ──────────────────────────────────────── */
+
+    .corr-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 1rem;
+      line-height: 1.5;
+    }
+
+    .corr-scroll { overflow-x: auto; margin-top: 0.75rem; }
+
+    .corr-table {
+      width: 100%;
+      min-width: 480px;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .corr-table th {
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      padding: 0.375rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .corr-table th.num, .corr-table td.num { text-align: center; }
+
+    .corr-table td {
+      padding: 0.4rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .corr-table tr:last-child td { border-bottom: none; }
+
+    .corr-trigger { font-weight: 600; color: var(--text); }
+
+    .heat {
+      display: inline-block;
+      min-width: 2.5rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .dim { color: var(--muted); }
+    .delta-up   { color: #dc2626; font-weight: 700; }
+    .delta-down { color: #16a34a; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .delta-up   { color: #f87171; }
+      .delta-down { color: #4ade80; }
+    }
 
     .export-row {
       display: flex;
@@ -474,11 +643,22 @@
         <span class="lbl">12h</span>
       </div>
       <label class="items-label" for="itemsInput">Food / drinks / encounters</label>
-      <input type="text" id="itemsInput" placeholder="Type and press Enter to add…" autocomplete="off">
+      <input type="text" id="itemsInput" list="itemsDatalist" placeholder="Type and press Enter to add…" autocomplete="off">
+      <datalist id="itemsDatalist"></datalist>
       <div class="chips" id="chips"></div>
       <button class="btn btn-exposure" id="logExposureBtn">Log Exposure</button>
     </div>
 
+  </div>
+
+  <div class="card">
+    <div class="panel-label">Medication Stack</div>
+    <div class="med-input-row">
+      <input type="text" id="medInput" placeholder="Add a medication…" autocomplete="off">
+      <button class="btn-med-add" id="addMedBtn">Add</button>
+    </div>
+    <div class="med-list" id="medList"></div>
+    <p class="med-stack-note" id="medStackNote"></p>
   </div>
 
   <div class="card">
@@ -499,6 +679,11 @@
       <span class="legend-item"><span class="lg-dash"></span> Exposure</span>
     </div>
   </div>
+
+  <details class="card" open>
+    <summary>Trigger ↔ Pain Correlation</summary>
+    <div id="corrContent"></div>
+  </details>
 
   <details class="card">
     <summary>Recent Entries</summary>
@@ -533,13 +718,18 @@
 
 const PAIN_KEY = 'sinusPainLog';
 const EXP_KEY  = 'sinusExposureLog';
+const MEDS_KEY = 'sinusMeds';
 
 const loadPain = () => { try { return JSON.parse(localStorage.getItem(PAIN_KEY) || '[]'); } catch { return []; } };
 const loadExp  = () => { try { return JSON.parse(localStorage.getItem(EXP_KEY)  || '[]'); } catch { return []; } };
+const loadMeds = () => { try { return JSON.parse(localStorage.getItem(MEDS_KEY) || '[]'); } catch { return []; } };
+
+const saveMeds = meds => localStorage.setItem(MEDS_KEY, JSON.stringify(meds));
+const activeMedNames = () => loadMeds().filter(m => m.active).map(m => m.name);
 
 function savePain(pain) {
   const log = loadPain();
-  log.push({ id: String(Date.now()), timestamp: new Date().toISOString(), pain });
+  log.push({ id: String(Date.now()), timestamp: new Date().toISOString(), pain, meds: activeMedNames() });
   localStorage.setItem(PAIN_KEY, JSON.stringify(log));
 }
 
@@ -563,6 +753,9 @@ function painColor(v) {
 function fmtTime(iso) {
   return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
+
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function trackColor() {
   return getComputedStyle(document.documentElement).getPropertyValue('--track').trim() || '#e2e8f0';
@@ -627,9 +820,16 @@ function renderChips() {
   items.forEach((item, i) => {
     const span = document.createElement('span');
     span.className = 'chip';
-    span.innerHTML = `${item} <button class="chip-x" data-i="${i}" aria-label="remove ${item}">×</button>`;
+    span.innerHTML = `${escapeHtml(item)} <button class="chip-x" data-i="${i}" aria-label="remove ${escapeHtml(item)}">×</button>`;
     chipsEl.appendChild(span);
   });
+}
+
+function updateDatalist() {
+  const seen = new Set();
+  loadExp().forEach(e => (e.items || []).forEach(i => seen.add(i)));
+  document.getElementById('itemsDatalist').innerHTML =
+    [...seen].sort().map(i => `<option value="${escapeHtml(i)}">`).join('');
 }
 
 itemsInput.addEventListener('keydown', e => {
@@ -645,6 +845,64 @@ chipsEl.addEventListener('click', e => {
   if (btn) { items.splice(+btn.dataset.i, 1); renderChips(); }
 });
 
+// ── Medications ───────────────────────────────────────────────────────────────
+
+const medInput = document.getElementById('medInput');
+const medList  = document.getElementById('medList');
+
+function renderMeds() {
+  const meds = loadMeds();
+  medList.innerHTML = meds.length
+    ? meds.map(m => `
+        <span class="med-item${m.active ? ' active' : ''}" data-id="${m.id}" role="switch" aria-checked="${m.active}" tabindex="0">
+          <span class="med-dot"></span>${escapeHtml(m.name)}
+          <button class="med-x" data-del="${m.id}" aria-label="delete ${escapeHtml(m.name)}">×</button>
+        </span>`).join('')
+    : '<span class="empty">No medications yet — add one above</span>';
+
+  const active = activeMedNames();
+  document.getElementById('medStackNote').textContent = active.length
+    ? `Current stack (saved with each pain log): ${active.join(', ')}`
+    : 'Tap a medication to toggle it on/off. Active meds are saved with each pain log.';
+}
+
+function addMed() {
+  const v = medInput.value.trim();
+  if (!v) return;
+  const meds = loadMeds();
+  if (!meds.some(m => m.name.toLowerCase() === v.toLowerCase())) {
+    meds.push({ id: String(Date.now()), name: v, active: true, addedAt: new Date().toISOString() });
+    saveMeds(meds);
+  }
+  medInput.value = '';
+  renderMeds();
+}
+
+document.getElementById('addMedBtn').addEventListener('click', addMed);
+medInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addMed(); } });
+
+medList.addEventListener('click', e => {
+  const del = e.target.closest('.med-x');
+  if (del) {
+    saveMeds(loadMeds().filter(m => m.id !== del.dataset.del));
+    renderMeds();
+    return;
+  }
+  const item = e.target.closest('.med-item');
+  if (item) {
+    const meds = loadMeds();
+    const m = meds.find(m => m.id === item.dataset.id);
+    if (m) { m.active = !m.active; saveMeds(meds); renderMeds(); }
+  }
+});
+
+medList.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    const item = e.target.closest('.med-item');
+    if (item) { e.preventDefault(); item.click(); }
+  }
+});
+
 // ── Log Handlers ──────────────────────────────────────────────────────────────
 
 function flash(btn, label) {
@@ -658,6 +916,7 @@ document.getElementById('logPainBtn').addEventListener('click', () => {
   flash(document.getElementById('logPainBtn'), 'Log Pain');
   refreshChart();
   renderRecent();
+  renderCorrelation();
 });
 
 document.getElementById('logExposureBtn').addEventListener('click', () => {
@@ -668,6 +927,8 @@ document.getElementById('logExposureBtn').addEventListener('click', () => {
   flash(document.getElementById('logExposureBtn'), 'Log Exposure');
   refreshChart();
   renderRecent();
+  renderCorrelation();
+  updateDatalist();
 });
 
 // ── Chart ─────────────────────────────────────────────────────────────────────
@@ -721,7 +982,7 @@ function refreshChart() {
   const painEntries = loadPain().filter(e => +new Date(e.timestamp) >= start);
   const expEntries  = loadExp().filter(e  => +new Date(e.timestamp) >= start);
 
-  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain }));
+  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain, meds: e.meds || [] }));
   const annotations = buildAnnotations(expEntries);
 
   let unit = 'hour';
@@ -781,7 +1042,8 @@ function refreshChart() {
               title: items => new Date(items[0].parsed.x).toLocaleString([], {
                 month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
               }),
-              label: item => `Pain: ${item.parsed.y}`
+              label: item => `Pain: ${item.parsed.y}`,
+              afterLabel: item => item.raw.meds?.length ? `Meds: ${item.raw.meds.join(', ')}` : ''
             }
           },
           zoom: {
@@ -825,6 +1087,91 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   syncHours();
 });
 
+// ── Correlation Matrix ────────────────────────────────────────────────────────
+
+const CORR_WINDOWS = [[0, 4], [4, 12], [12, 24]];
+const CORR_LABELS  = ['0–4h', '4–12h', '12–24h'];
+
+function computeCorrelations() {
+  const pain = loadPain().map(e => ({ t: +new Date(e.timestamp), pain: e.pain }));
+  const exp  = loadExp().filter(e => e.items && e.items.length);
+  if (!pain.length || !exp.length) return null;
+
+  const baseline = pain.reduce((s, e) => s + e.pain, 0) / pain.length;
+  const map = new Map();
+
+  exp.forEach(e => {
+    const t0 = +new Date(e.timestamp);
+    new Set(e.items).forEach(item => {
+      if (!map.has(item)) map.set(item, { count: 0, windows: CORR_WINDOWS.map(() => ({ sum: 0, n: 0 })), all: { sum: 0, n: 0 } });
+      const rec = map.get(item);
+      rec.count++;
+      pain.forEach(p => {
+        const dh = (p.t - t0) / 3600000;
+        if (dh >= 0 && dh < 24) { rec.all.sum += p.pain; rec.all.n++; }
+        CORR_WINDOWS.forEach((w, i) => {
+          if (dh >= w[0] && dh < w[1]) { rec.windows[i].sum += p.pain; rec.windows[i].n++; }
+        });
+      });
+    });
+  });
+
+  const rows = [...map.entries()].map(([item, rec]) => ({
+    item,
+    count: rec.count,
+    windows: rec.windows.map(w => w.n ? w.sum / w.n : null),
+    delta: rec.all.n ? rec.all.sum / rec.all.n - baseline : null,
+  }));
+
+  rows.sort((a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity));
+  return { baseline, rows };
+}
+
+function renderCorrelation() {
+  const el = document.getElementById('corrContent');
+  const result = computeCorrelations();
+
+  if (!result) {
+    el.innerHTML = '<p class="corr-note">Log some pain entries and exposures with items — a trigger-vs-pain matrix will build up here automatically.</p>';
+    return;
+  }
+
+  const { baseline, rows } = result;
+
+  const heat = v => v == null
+    ? '<span class="dim">–</span>'
+    : `<span class="heat" style="background:${painColor(v)}">${v.toFixed(1)}</span>`;
+
+  const delta = d => d == null
+    ? '<span class="dim">–</span>'
+    : `<span class="${d >= 0.05 ? 'delta-up' : d <= -0.05 ? 'delta-down' : 'dim'}">${d >= 0 ? '+' : ''}${d.toFixed(1)}</span>`;
+
+  el.innerHTML = `
+    <p class="corr-note">Average pain logged in each time window after a trigger, vs your overall baseline of <b>${baseline.toFixed(1)}</b>.
+    Δ is the 0–24h average minus baseline — red means pain runs higher than usual after that trigger.</p>
+    <div class="corr-scroll">
+      <table class="corr-table">
+        <thead>
+          <tr>
+            <th>Trigger</th>
+            <th class="num">Logged</th>
+            ${CORR_LABELS.map(l => `<th class="num">${l}</th>`).join('')}
+            <th class="num">Δ vs baseline</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td class="corr-trigger">${escapeHtml(r.item)}</td>
+              <td class="num dim">×${r.count}</td>
+              ${r.windows.map(v => `<td class="num">${heat(v)}</td>`).join('')}
+              <td class="num">${delta(r.delta)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
 // ── Recent ────────────────────────────────────────────────────────────────────
 
 function renderRecent() {
@@ -838,12 +1185,13 @@ function renderRecent() {
     ? painLog.map(e => `<li class="ri">
         <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
         <span class="ri-pain" style="color:${painColor(e.pain)}">Pain ${e.pain}</span>
+        ${e.meds?.length ? `<br><span class="ri-meds">💊 ${escapeHtml(e.meds.join(', '))}</span>` : ''}
       </li>`).join('')
     : '<li class="empty">No entries yet</li>';
 
   expList.innerHTML = expLog.length
     ? expLog.map(e => {
-        const ilbl = e.items.length ? e.items.join(', ') : '(no items)';
+        const ilbl = e.items.length ? escapeHtml(e.items.join(', ')) : '(no items)';
         return `<li class="ri">
           <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
           <span class="ri-items">${ilbl}</span>
@@ -863,7 +1211,8 @@ function download(content, filename, type) {
 }
 
 document.getElementById('expPainCsv').addEventListener('click', () => {
-  const rows = ['timestamp,pain', ...loadPain().map(e => `${e.timestamp},${e.pain}`)];
+  const rows = ['timestamp,pain,meds',
+    ...loadPain().map(e => `${e.timestamp},${e.pain},"${(e.meds || []).join('; ')}"`)];
   download(rows.join('\n'), 'sinus-pain-log.csv', 'text/csv');
 });
 
@@ -876,7 +1225,7 @@ document.getElementById('expExposureCsv').addEventListener('click', () => {
 
 document.getElementById('expJson').addEventListener('click', () => {
   download(
-    JSON.stringify({ painLog: loadPain(), exposureLog: loadExp() }, null, 2),
+    JSON.stringify({ painLog: loadPain(), exposureLog: loadExp(), medications: loadMeds() }, null, 2),
     'sinus-tracker-export.json',
     'application/json'
   );
@@ -886,7 +1235,10 @@ document.getElementById('expJson').addEventListener('click', () => {
 
 syncPain();
 syncHours();
+renderMeds();
 renderRecent();
+renderCorrelation();
+updateDatalist();
 refreshChart();
 </script>
 </body>
