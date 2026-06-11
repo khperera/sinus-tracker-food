@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sinus Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.25rem 1rem 3rem;
+    }
+
+    .app {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+
+    h1 {
+      font-size: 1.625rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    header p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.375rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .log-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 560px) {
+      .log-panels { grid-template-columns: 1fr; }
+    }
+
+    .panel-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.875rem;
+    }
+
+    .pain-display {
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+      text-align: center;
+      margin-bottom: 0.625rem;
+      transition: color 0.15s;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.125rem;
+    }
+
+    .slider-row .lbl {
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 2rem;
+      text-align: center;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--tb, #64748b);
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+
+    input[type="range"]:active::-webkit-slider-thumb {
+      transform: scale(1.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--tb, #64748b);
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    }
+
+    .hours-display {
+      font-size: 1.375rem;
+      font-weight: 700;
+      text-align: center;
+      color: #f97316;
+      margin-bottom: 0.5rem;
+    }
+
+    .items-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    #itemsInput {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: #f8fafc;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    #itemsInput:focus {
+      border-color: #f97316;
+      background: #fff;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.875rem;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      color: #c2410c;
+      font-weight: 500;
+    }
+
+    .chip-x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: none;
+      background: #fdba74;
+      color: #7c2d12;
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.1s;
+    }
+
+    .chip-x:hover { background: #fb923c; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .btn:active { transform: scale(0.975); }
+
+    .btn-pain {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+
+    .btn-exposure {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+    }
+
+    .btn-pain:hover, .btn-exposure:hover { opacity: 0.92; }
+
+    .btn.logged {
+      background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+      color: #fff !important;
+      pointer-events: none;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .range-group { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+
+    .range-btn {
+      padding: 0.3125rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #f8fafc;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+
+    .range-btn:hover { border-color: #94a3b8; color: var(--text); }
+
+    .range-btn.active {
+      background: #1e293b;
+      border-color: #1e293b;
+      color: #fff;
+    }
+
+    .reset-btn {
+      padding: 0.3125rem 0.75rem;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      background: #eef2ff;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      color: #4338ca;
+      transition: background 0.15s;
+    }
+
+    .reset-btn:hover { background: #e0e7ff; }
+
+    .chart-wrap {
+      position: relative;
+      height: 280px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+      justify-content: center;
+      margin-top: 0.875rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 0.375rem; }
+
+    .lg-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #ef4444);
+    }
+
+    .lg-dash {
+      width: 18px;
+      border-top: 2px dashed #fb923c;
+    }
+
+    details.card { cursor: default; }
+
+    details summary {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      user-select: none;
+    }
+
+    details summary::before {
+      content: '▸';
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+
+    details[open] summary::before { transform: rotate(90deg); }
+
+    .recent-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 560px) {
+      .recent-grid { grid-template-columns: 1fr; }
+    }
+
+    .recent-col h3 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .recent-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+
+    .ri {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.625rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      line-height: 1.5;
+    }
+
+    .ri-ts  { color: var(--muted); font-size: 0.7rem; }
+    .ri-pain { font-weight: 700; }
+    .ri-items { color: #92400e; }
+    .ri-meta  { color: var(--muted); font-size: 0.7rem; }
+    .empty    { color: var(--muted); font-size: 0.8rem; font-style: italic; padding: 0.25rem 0; }
+
+    .export-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .export-row .btn {
+      flex: 1;
+      padding: 0.625rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .export-row .btn:hover {
+      background: #f1f5f9;
+      color: var(--text);
+      border-color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Sinus Tracker</h1>
+    <p>Log pain and exposures separately — correlate on the timeline</p>
+  </header>
+
+  <div class="log-panels">
+
+    <div class="card">
+      <div class="panel-label">Log Pain</div>
+      <div class="pain-display" id="painDisplay">5</div>
+      <div class="slider-row">
+        <span class="lbl">1</span>
+        <input type="range" id="painSlider" min="1" max="10" value="5" step="1">
+        <span class="lbl">10</span>
+      </div>
+      <button class="btn btn-pain" id="logPainBtn">Log Pain</button>
+    </div>
+
+    <div class="card">
+      <div class="panel-label">Log Exposure</div>
+      <div class="hours-display" id="hoursDisplay">4 hours back</div>
+      <div class="slider-row">
+        <span class="lbl">30m</span>
+        <input type="range" id="hoursSlider" min="0" max="8" value="5" step="1">
+        <span class="lbl">12h</span>
+      </div>
+      <label class="items-label" for="itemsInput">Food / drinks / encounters</label>
+      <input type="text" id="itemsInput" placeholder="Type and press Enter to add…" autocomplete="off">
+      <div class="chips" id="chips"></div>
+      <button class="btn btn-exposure" id="logExposureBtn">Log Exposure</button>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="chart-header">
+      <div class="range-group">
+        <button class="range-btn active" data-range="today">Today</button>
+        <button class="range-btn" data-range="7d">7 days</button>
+        <button class="range-btn" data-range="30d">30 days</button>
+        <button class="range-btn" data-range="all">All</button>
+      </div>
+      <button class="reset-btn" id="resetZoomBtn">Reset Zoom</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="lg-dot"></span> Pain level</span>
+      <span class="legend-item"><span class="lg-dash"></span> Exposure</span>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>Recent Entries</summary>
+    <div class="recent-grid">
+      <div class="recent-col">
+        <h3>Pain</h3>
+        <ul class="recent-list" id="recentPain"></ul>
+      </div>
+      <div class="recent-col">
+        <h3>Exposures</h3>
+        <ul class="recent-list" id="recentExposure"></ul>
+      </div>
+    </div>
+  </details>
+
+  <div class="export-row">
+    <button class="btn" id="expPainCsv">↓ Pain CSV</button>
+    <button class="btn" id="expExposureCsv">↓ Exposure CSV</button>
+    <button class="btn" id="expJson">↓ Full JSON</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2/dist/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3/dist/chartjs-plugin-annotation.min.js"></script>
+
+<script>
+// ── Storage ───────────────────────────────────────────────────────────────────
+
+const PAIN_KEY = 'sinusPainLog';
+const EXP_KEY  = 'sinusExposureLog';
+
+const loadPain = () => { try { return JSON.parse(localStorage.getItem(PAIN_KEY) || '[]'); } catch { return []; } };
+const loadExp  = () => { try { return JSON.parse(localStorage.getItem(EXP_KEY)  || '[]'); } catch { return []; } };
+
+function savePain(pain) {
+  const log = loadPain();
+  log.push({ id: String(Date.now()), timestamp: new Date().toISOString(), pain });
+  localStorage.setItem(PAIN_KEY, JSON.stringify(log));
+}
+
+function saveExp(hoursBefore, items) {
+  const log = loadExp();
+  log.push({ id: String(Date.now()), timestamp: new Date().toISOString(), hoursBefore, items });
+  localStorage.setItem(EXP_KEY, JSON.stringify(log));
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const HOURS_VALUES = [0.5, 1, 1.5, 2, 3, 4, 6, 8, 12];
+const HOURS_LABELS = ['30 min', '1 hour', '1.5 hours', '2 hours', '3 hours', '4 hours', '6 hours', '8 hours', '12 hours'];
+
+function painColor(v) {
+  const hue = 120 - (v - 1) * (120 / 9);
+  return `hsl(${Math.round(hue)}, 80%, 42%)`;
+}
+
+function fmtTime(iso) {
+  return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Pain Slider ───────────────────────────────────────────────────────────────
+
+const painSlider  = document.getElementById('painSlider');
+const painDisplay = document.getElementById('painDisplay');
+
+function syncPain() {
+  const v = +painSlider.value;
+  const c = painColor(v);
+  const pct = (v - 1) / 9 * 100;
+  painDisplay.textContent = v;
+  painDisplay.style.color = c;
+  painSlider.style.background = `linear-gradient(to right, ${c} ${pct}%, #e2e8f0 ${pct}%)`;
+  painSlider.style.setProperty('--tb', c);
+}
+
+painSlider.addEventListener('input', syncPain);
+
+// ── Hours Slider ──────────────────────────────────────────────────────────────
+
+const hoursSlider  = document.getElementById('hoursSlider');
+const hoursDisplay = document.getElementById('hoursDisplay');
+
+function syncHours() {
+  const idx = +hoursSlider.value;
+  hoursDisplay.textContent = HOURS_LABELS[idx] + ' back';
+  const pct = idx / 8 * 100;
+  hoursSlider.style.background = `linear-gradient(to right, #f97316 ${pct}%, #e2e8f0 ${pct}%)`;
+  hoursSlider.style.setProperty('--tb', '#f97316');
+}
+
+hoursSlider.addEventListener('input', syncHours);
+
+// ── Chips ─────────────────────────────────────────────────────────────────────
+
+let items = [];
+const itemsInput = document.getElementById('itemsInput');
+const chipsEl    = document.getElementById('chips');
+
+function renderChips() {
+  chipsEl.innerHTML = '';
+  items.forEach((item, i) => {
+    const span = document.createElement('span');
+    span.className = 'chip';
+    span.innerHTML = `${item} <button class="chip-x" data-i="${i}" aria-label="remove ${item}">×</button>`;
+    chipsEl.appendChild(span);
+  });
+}
+
+itemsInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const v = itemsInput.value.trim().toLowerCase().replace(/,$/, '');
+    if (v) { items.push(v); renderChips(); itemsInput.value = ''; }
+  }
+});
+
+chipsEl.addEventListener('click', e => {
+  const btn = e.target.closest('.chip-x');
+  if (btn) { items.splice(+btn.dataset.i, 1); renderChips(); }
+});
+
+// ── Log Handlers ──────────────────────────────────────────────────────────────
+
+function flash(btn, label) {
+  btn.textContent = 'Logged ✓';
+  btn.classList.add('logged');
+  setTimeout(() => { btn.textContent = label; btn.classList.remove('logged'); }, 1500);
+}
+
+document.getElementById('logPainBtn').addEventListener('click', () => {
+  savePain(+painSlider.value);
+  flash(document.getElementById('logPainBtn'), 'Log Pain');
+  refreshChart();
+  renderRecent();
+});
+
+document.getElementById('logExposureBtn').addEventListener('click', () => {
+  saveExp(HOURS_VALUES[+hoursSlider.value], [...items]);
+  items = [];
+  renderChips();
+  itemsInput.value = '';
+  flash(document.getElementById('logExposureBtn'), 'Log Exposure');
+  refreshChart();
+  renderRecent();
+});
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+
+let chart = null;
+let activeRange = 'today';
+
+function getRangeStart(range) {
+  const now = Date.now();
+  if (range === 'today') return new Date().setHours(0, 0, 0, 0);
+  if (range === '7d')    return now - 7  * 86400000;
+  if (range === '30d')   return now - 30 * 86400000;
+  const all = [...loadPain(), ...loadExp()].map(e => +new Date(e.timestamp));
+  return all.length ? Math.min(...all) - 3600000 : now - 86400000;
+}
+
+function buildAnnotations(expEntries) {
+  const out = {};
+  expEntries.forEach((e, i) => {
+    const lbl = e.items.length
+      ? e.items.slice(0, 2).join(', ') + (e.items.length > 2 ? '…' : '')
+      : null;
+    out[`e${i}`] = {
+      type: 'line',
+      xMin: +new Date(e.timestamp),
+      xMax: +new Date(e.timestamp),
+      borderColor: 'rgba(249,115,22,0.55)',
+      borderWidth: 1.5,
+      borderDash: [5, 4],
+      label: lbl ? {
+        display: true,
+        content: lbl,
+        position: 'start',
+        rotation: -90,
+        backgroundColor: 'rgba(249,115,22,0.82)',
+        color: '#fff',
+        font: { size: 9 },
+        padding: { x: 3, y: 2 }
+      } : { display: false }
+    };
+  });
+  return out;
+}
+
+function refreshChart() {
+  const start = getRangeStart(activeRange);
+  const now   = Date.now();
+  const span  = now - start;
+
+  const painEntries = loadPain().filter(e => +new Date(e.timestamp) >= start);
+  const expEntries  = loadExp().filter(e  => +new Date(e.timestamp) >= start);
+
+  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain }));
+  const annotations = buildAnnotations(expEntries);
+
+  let unit = 'hour';
+  if (span > 60 * 86400000) unit = 'week';
+  else if (span > 3 * 86400000) unit = 'day';
+
+  if (!chart) {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          data: painData,
+          pointBackgroundColor: pt => painColor(pt.parsed?.y ?? 5),
+          pointBorderColor: 'transparent',
+          pointRadius: 7,
+          pointHoverRadius: 10,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            min: start,
+            max: now,
+            time: {
+              unit,
+              displayFormats: {
+                minute: 'h:mm a',
+                hour:   'h:mm a',
+                day:    'MMM d',
+                week:   'MMM d'
+              }
+            },
+            grid:  { color: '#f1f5f9' },
+            ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 0, maxTicksLimit: 8 }
+          },
+          y: {
+            min: 0.5,
+            max: 10.5,
+            ticks: {
+              stepSize: 1,
+              callback: v => Number.isInteger(v) ? v : '',
+              color: '#94a3b8',
+              font: { size: 11 }
+            },
+            grid:  { color: '#f1f5f9' },
+            title: { display: true, text: 'Pain', color: '#94a3b8', font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => new Date(items[0].parsed.x).toLocaleString([], {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+              }),
+              label: item => `Pain: ${item.parsed.y}`
+            }
+          },
+          zoom: {
+            pan:  { enabled: true, mode: 'x' },
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+          },
+          annotation: { annotations }
+        }
+      }
+    });
+  } else {
+    chart.data.datasets[0].data = painData;
+    chart.options.plugins.annotation.annotations = annotations;
+    chart.options.scales.x.min  = start;
+    chart.options.scales.x.max  = now;
+    chart.options.scales.x.time.unit = unit;
+    chart.update('none');
+  }
+}
+
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeRange = btn.dataset.range;
+    refreshChart();
+  });
+});
+
+document.getElementById('resetZoomBtn').addEventListener('click', () => chart?.resetZoom());
+
+// ── Recent ────────────────────────────────────────────────────────────────────
+
+function renderRecent() {
+  const painLog = loadPain().slice(-5).reverse();
+  const expLog  = loadExp().slice(-5).reverse();
+
+  const painList = document.getElementById('recentPain');
+  const expList  = document.getElementById('recentExposure');
+
+  painList.innerHTML = painLog.length
+    ? painLog.map(e => `<li class="ri">
+        <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+        <span class="ri-pain" style="color:${painColor(e.pain)}">Pain ${e.pain}</span>
+      </li>`).join('')
+    : '<li class="empty">No entries yet</li>';
+
+  expList.innerHTML = expLog.length
+    ? expLog.map(e => {
+        const idx   = HOURS_VALUES.indexOf(e.hoursBefore);
+        const hlbl  = idx >= 0 ? HOURS_LABELS[idx] : `${e.hoursBefore}h`;
+        const ilbl  = e.items.length ? e.items.join(', ') : '(no items)';
+        return `<li class="ri">
+          <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+          <span class="ri-items">${ilbl}</span><br>
+          <span class="ri-meta">${hlbl} window</span>
+        </li>`;
+      }).join('')
+    : '<li class="empty">No entries yet</li>';
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+
+function download(content, filename, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
+}
+
+document.getElementById('expPainCsv').addEventListener('click', () => {
+  const rows = ['timestamp,pain', ...loadPain().map(e => `${e.timestamp},${e.pain}`)];
+  download(rows.join('\n'), 'sinus-pain-log.csv', 'text/csv');
+});
+
+document.getElementById('expExposureCsv').addEventListener('click', () => {
+  const rows = ['timestamp,hours_before,items',
+    ...loadExp().map(e => `${e.timestamp},${e.hoursBefore},"${e.items.join(',')}"`
+  )];
+  download(rows.join('\n'), 'sinus-exposure-log.csv', 'text/csv');
+});
+
+document.getElementById('expJson').addEventListener('click', () => {
+  download(
+    JSON.stringify({ painLog: loadPain(), exposureLog: loadExp() }, null, 2),
+    'sinus-tracker-export.json',
+    'application/json'
+  );
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+syncPain();
+syncHours();
+renderRecent();
+refreshChart();
+</script>
+</body>
+</html>
