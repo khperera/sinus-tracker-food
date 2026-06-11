@@ -1052,20 +1052,32 @@ const uid = () => (crypto.randomUUID
 
 // A corrupt blob is preserved under a *_corrupt_* key — otherwise the next
 // save would push one entry onto [] and silently overwrite the whole history.
+// Parsed lists are cached so a render pass doesn't re-parse the same blob
+// dozens of times; saveList keeps the cache coherent, and the cross-tab
+// storage listener clears it.
+const listCache = new Map();
+
 function loadList(key) {
+  if (listCache.has(key)) return listCache.get(key);
   const raw = localStorage.getItem(key);
-  if (!raw) return [];
-  try {
-    const v = JSON.parse(raw);
-    return Array.isArray(v) ? v : [];
-  } catch {
-    try { localStorage.setItem(`${key}_corrupt_${Date.now()}`, raw); } catch {}
-    localStorage.removeItem(key);
-    return [];
+  let list = [];
+  if (raw) {
+    try {
+      const v = JSON.parse(raw);
+      if (Array.isArray(v)) list = v;
+    } catch {
+      try { localStorage.setItem(`${key}_corrupt_${Date.now()}`, raw); } catch {}
+      localStorage.removeItem(key);
+    }
   }
+  listCache.set(key, list);
+  return list;
 }
 
-const saveList  = (key, v) => localStorage.setItem(key, JSON.stringify(v));
+const saveList = (key, v) => {
+  listCache.set(key, v);
+  localStorage.setItem(key, JSON.stringify(v));
+};
 const loadPain  = () => loadList(PAIN_KEY);
 const loadExp   = () => loadList(EXP_KEY);
 const loadMeds  = () => loadList(MEDS_KEY);
@@ -1135,6 +1147,12 @@ function migrate() {
     });
     if (changed) saveList(key, list);
   });
+  // Record what version wrote the live data so future migrations can branch.
+  const s = loadSettings();
+  if (s.schemaVersion !== SCHEMA_VERSION) {
+    s.schemaVersion = SCHEMA_VERSION;
+    saveSettings(s);
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1399,13 +1417,15 @@ function renderQuickChips() {
 quickChipsEl.addEventListener('click', e => {
   const btn = e.target.closest('.quick-chip');
   if (!btn) return;
-  saveExp(HOURS_VALUES[+hoursSlider.value], [btn.dataset.item]);
-  btn.textContent = '✓ ' + btn.dataset.item;
-  setTimeout(renderQuickChips, 900);
-  refreshChart();
-  renderRecent();
-  renderCorrelation();
-  renderBackupNote();
+  const item = btn.dataset.item;
+  saveExp(HOURS_VALUES[+hoursSlider.value], [item]);
+  rerenderAll();
+  // rerenderAll redrew the chips — re-acquire ours so the ✓ feedback survives
+  const fresh = [...quickChipsEl.querySelectorAll('.quick-chip')].find(b => b.dataset.item === item);
+  if (fresh) {
+    fresh.textContent = '✓ ' + item;
+    setTimeout(renderQuickChips, 900);
+  }
 });
 
 // ── Medications ───────────────────────────────────────────────────────────────
@@ -1538,7 +1558,7 @@ function addMed() {
   if (!v) return;
   const meds = loadMeds();
   if (!meds.some(m => m.name.toLowerCase() === v.toLowerCase())) {
-    meds.push({ id: String(Date.now()), name: v, active: true, addedAt: new Date().toISOString() });
+    meds.push({ id: uid(), name: v, active: true, addedAt: new Date().toISOString() });
     saveMeds(meds);
   }
   medInput.value = '';
@@ -1554,8 +1574,7 @@ medList.addEventListener('click', e => {
     saveDose(dose.dataset.dose);
     dose.textContent = '✓';
     setTimeout(renderMeds, 900);
-    refreshChart();
-    renderRecent();
+    rerenderAll();
     return;
   }
   const del = e.target.closest('.med-x');
@@ -1690,10 +1709,16 @@ function rollingTrend(painEntries) {
     .sort((a, b) => a.t - b.t);
   if (pts.length < 3) return [];
   const HALF = 12 * 3600000;
-  return pts.map(pt => {
-    const w = pts.filter(q => q.t >= pt.t - HALF && q.t <= pt.t + HALF);
-    return { x: pt.t, y: w.reduce((s, q) => s + q.p, 0) / w.length };
-  });
+  // Sliding window over the sorted points keeps this O(n) instead of
+  // filtering the whole array per point.
+  const out = [];
+  let lo = 0, hi = 0, sum = 0;
+  for (const pt of pts) {
+    while (hi < pts.length && pts[hi].t <= pt.t + HALF) { sum += pts[hi].p; hi++; }
+    while (pts[lo].t < pt.t - HALF) { sum -= pts[lo].p; lo++; }
+    out.push({ x: pt.t, y: sum / (hi - lo) });
+  }
+  return out;
 }
 
 function refreshChart() {
@@ -1840,9 +1865,23 @@ const CORR_LABELS  = ['0–4h', '4–12h', '12–24h'];
 const MIN_N = 3;
 
 function computeCorrelations() {
-  const pain = loadPain().map(e => ({ t: +new Date(e.timestamp), pain: e.pain }));
+  const pain = loadPain()
+    .map(e => ({ t: +new Date(e.timestamp), pain: e.pain }))
+    .sort((a, b) => a.t - b.t);
   const exp  = loadExp().filter(e => e.items && e.items.length);
   if (!pain.length || !exp.length) return null;
+
+  // First pain reading at or after time t (sorted array → binary search), so
+  // each exposure only walks the readings inside its ±24h window instead of
+  // the whole history.
+  const firstAfter = t => {
+    let lo = 0, hi = pain.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pain[mid].t < t) lo = mid + 1; else hi = mid;
+    }
+    return lo;
+  };
 
   const baseline = pain.reduce((s, e) => s + e.pain, 0) / pain.length;
   const map = new Map();
@@ -1873,14 +1912,16 @@ function computeCorrelations() {
       // "I log exposures when I already feel bad" bias that a global baseline
       // comparison can't.
       const before = [], after = [];
-      pain.forEach(p => {
+      for (let i = firstAfter(t0 - 24 * 3600000); i < pain.length; i++) {
+        const p = pain[i];
         const dh = (p.t - t0) / 3600000;
-        if (dh >= -24 && dh < 0) before.push(p.pain);
-        if (dh >= 0  && dh < 24) after.push(p.pain);
-        CORR_WINDOWS.forEach((w, i) => {
-          if (dh >= w[0] && dh < w[1]) { rec.windows[i].sum += p.pain; rec.windows[i].n++; }
+        if (dh >= 24) break;
+        if (dh < 0) { before.push(p.pain); continue; }
+        after.push(p.pain);
+        CORR_WINDOWS.forEach((w, j) => {
+          if (dh >= w[0] && dh < w[1]) { rec.windows[j].sum += p.pain; rec.windows[j].n++; }
         });
-      });
+      }
       if (before.length && after.length) {
         rec.pairedDeltas.push(
           after.reduce((s, v) => s + v, 0) / after.length -
@@ -2175,6 +2216,24 @@ importFile.addEventListener('change', async () => {
   const m = merge(MEDS_KEY, data.medications,
     (a, b) => a.name?.toLowerCase() === b.name?.toLowerCase());
 
+  // Name-matched meds keep local settings, but adopt an incoming repeat
+  // schedule when none is set locally — otherwise a cadence configured on
+  // another device would silently never arrive.
+  if (Array.isArray(data.medications)) {
+    const meds = loadMeds();
+    let touched = false;
+    data.medications.forEach(inc => {
+      if (!inc?.name || !inc.cadenceDays) return;
+      const local = meds.find(x => x.name?.toLowerCase() === inc.name.toLowerCase());
+      if (local && local.cadenceDays == null) {
+        local.cadenceDays = inc.cadenceDays;
+        local.autoLog = !!inc.autoLog;
+        touched = true;
+      }
+    });
+    if (touched) { saveMeds(meds); autoLogScheduledDoses(); }
+  }
+
   renderMeds();
   rerenderAll();
   alert(`Imported ${p} pain, ${x} exposure, ${d} dose and ${m} medication entries. Duplicates were skipped.`);
@@ -2270,8 +2329,15 @@ document.getElementById('expReport').addEventListener('click', () => {
     <td>${r.pairedDelta == null ? '–' : (r.pairedDelta >= 0 ? '+' : '') + r.pairedDelta.toFixed(1)}</td>
     <td>${r.pairedN}</td></tr>`).join('') : '';
 
+  // Auto-backfilled doses are assumptions, not observations — a clinician
+  // reading adherence numbers needs to know the difference.
   const doseCounts = new Map();
-  doses.filter(d => within(d, 30)).forEach(d => doseCounts.set(d.med, (doseCounts.get(d.med) || 0) + 1));
+  doses.filter(d => within(d, 30)).forEach(d => {
+    const c = doseCounts.get(d.med) || { total: 0, auto: 0 };
+    c.total++;
+    if (d.auto) c.auto++;
+    doseCounts.set(d.med, c);
+  });
 
   const w = window.open('', '_blank');
   if (!w) { alert('Pop-up blocked — allow pop-ups for this site to generate the report.'); return; }
@@ -2303,7 +2369,8 @@ document.getElementById('expReport').addEventListener('click', () => {
     <h2>Medications</h2>
     <p>Current stack: ${loadMeds().filter(m => m.active).map(m =>
       escapeHtml(m.name) + (m.cadenceDays ? ` (${cadenceLabel(m.cadenceDays)})` : '')).join(', ') || 'none'}</p>
-    ${doseCounts.size ? `<p>Doses logged in the last 30 days: ${[...doseCounts.entries()].map(([m, n]) => `${escapeHtml(m)} ×${n}`).join(', ')}</p>` : ''}
+    ${doseCounts.size ? `<p>Doses logged in the last 30 days: ${[...doseCounts.entries()].map(([m, c]) =>
+      `${escapeHtml(m)} ×${c.total}${c.auto ? ` (${c.auto} auto-logged on schedule)` : ''}`).join(', ')}</p>` : ''}
     <button onclick="print()">Print</button>
   </body></html>`);
   w.document.close();
@@ -2322,6 +2389,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 // Another tab logged something — pick it up instead of overwriting it later.
 window.addEventListener('storage', e => {
   if ([PAIN_KEY, EXP_KEY, MEDS_KEY, DOSE_KEY, null].includes(e.key)) {
+    listCache.clear();
     renderMeds();
     rerenderAll();
   }
