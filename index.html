@@ -468,9 +468,65 @@
 
     .med-list {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 0.5rem;
       margin-top: 0.875rem;
+    }
+
+    .med-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .med-ctl {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      margin-left: auto;
+    }
+
+    .med-cad {
+      padding: 0.2rem 0.3rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.72rem;
+      outline: none;
+    }
+
+    .med-auto {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .med-auto input { accent-color: #0ea5e9; }
+
+    .med-due-badge {
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #b45309;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 999px;
+      padding: 0.1rem 0.45rem;
+    }
+
+    .med-dose.due { border-color: #f59e0b; background: #fef3c7; }
+
+    @media (prefers-color-scheme: dark) {
+      .med-due-badge { color: #fbbf24; background: #451a03; border-color: #92400e; }
+      .med-dose.due { background: #451a03; }
     }
 
     .med-item {
@@ -648,6 +704,59 @@
       outline: none;
     }
 
+    .note-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      margin-bottom: 0.875rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .note-input:focus { border-color: #ef4444; background: var(--card); }
+    .note-input::placeholder { color: var(--muted); }
+
+    .sym-details { margin-bottom: 1.125rem; }
+
+    .sym-details summary {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sym-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .sym-name {
+      font-size: 0.72rem;
+      color: var(--muted);
+      min-width: 6.5rem;
+    }
+
+    .sym-row input[type="range"] { height: 4px; }
+
+    .sym-val {
+      font-size: 0.75rem;
+      font-weight: 700;
+      min-width: 1.25rem;
+      text-align: center;
+    }
+
+    .ri-note { font-size: 0.75rem; font-style: italic; color: var(--muted); }
+
     .quick-chips {
       display: flex;
       flex-wrap: wrap;
@@ -816,6 +925,14 @@
           <option value="12">12 hours ago</option>
         </select>
       </div>
+      <input type="text" id="painNote" class="note-input" placeholder="Note (optional)" autocomplete="off">
+      <details class="sym-details">
+        <summary>More symptoms (optional)</summary>
+        <div class="sym-row"><span class="sym-name">Congestion</span><input type="range" min="0" max="10" value="0" step="1" data-sym="congestion"><span class="sym-val" data-symval="congestion">–</span></div>
+        <div class="sym-row"><span class="sym-name">Pressure</span><input type="range" min="0" max="10" value="0" step="1" data-sym="pressure"><span class="sym-val" data-symval="pressure">–</span></div>
+        <div class="sym-row"><span class="sym-name">Headache</span><input type="range" min="0" max="10" value="0" step="1" data-sym="headache"><span class="sym-val" data-symval="headache">–</span></div>
+        <div class="sym-row"><span class="sym-name">Post-nasal drip</span><input type="range" min="0" max="10" value="0" step="1" data-sym="drip"><span class="sym-val" data-symval="drip">–</span></div>
+      </details>
       <button class="btn btn-pain" id="logPainBtn">Log Pain</button>
     </div>
 
@@ -904,6 +1021,7 @@
       <button class="btn" id="expExposureCsv">↓ Exposure CSV</button>
       <button class="btn" id="expJson">↓ Full JSON</button>
       <button class="btn" id="impJson">⇡ Import JSON</button>
+      <button class="btn" id="mergeTriggerBtn">✎ Merge Triggers</button>
       <button class="btn" id="expReport">🖨 Doctor Report</button>
     </div>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -925,7 +1043,7 @@ const EXP_KEY      = 'sinusExposureLog';
 const MEDS_KEY     = 'sinusMeds';
 const DOSE_KEY     = 'sinusMedDoses';
 const SETTINGS_KEY = 'sinusSettings';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const DAY = 86400000;
 
 const uid = () => (crypto.randomUUID
@@ -962,7 +1080,7 @@ const saveSettings = s => localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 const saveMeds = meds => saveList(MEDS_KEY, meds);
 const activeMedNames = () => loadMeds().filter(m => m.active).map(m => m.name);
 
-function savePain(pain, hoursAgo = 0) {
+function savePain(pain, hoursAgo = 0, note = null, symptoms = null) {
   const log = loadPain();
   const entry = {
     id: uid(),
@@ -970,6 +1088,8 @@ function savePain(pain, hoursAgo = 0) {
     pain,
     meds: activeMedNames(),
   };
+  if (note) entry.note = note;
+  if (symptoms) entry.symptoms = symptoms;
   log.push(entry);
   saveList(PAIN_KEY, log);
   captureWeather(entry.id);
@@ -1030,6 +1150,18 @@ function painColor(v) {
 function fmtTime(iso) {
   return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
+
+function relTime(iso) {
+  const m = Math.round((Date.now() - +new Date(iso)) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
+const SYM_LABELS = { congestion: 'congestion', pressure: 'pressure', headache: 'headache', drip: 'drip' };
+const fmtSymptoms = s => Object.entries(s).map(([k, v]) => `${SYM_LABELS[k] || k} ${v}`).join(' · ');
 
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1161,10 +1293,33 @@ hoursSlider.addEventListener('input', syncHours);
 hoursSlider.addEventListener('change', syncHours);
 
 // Prevent chart's HammerJS from stealing touch events on sliders
-[painSlider, hoursSlider].forEach(slider => {
+document.querySelectorAll('input[type="range"]').forEach(slider => {
   slider.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
   slider.addEventListener('touchmove',  e => e.stopPropagation(), { passive: true });
 });
+
+// ── Secondary symptoms (optional, 0 = not recorded) ───────────────────────────
+
+document.querySelectorAll('[data-sym]').forEach(sl => {
+  sl.addEventListener('input', () => {
+    const v = +sl.value;
+    document.querySelector(`[data-symval="${sl.dataset.sym}"]`).textContent = v || '–';
+  });
+});
+
+function collectSymptoms() {
+  const out = {};
+  document.querySelectorAll('[data-sym]').forEach(sl => {
+    const v = +sl.value;
+    if (v > 0) out[sl.dataset.sym] = v;
+  });
+  return Object.keys(out).length ? out : null;
+}
+
+function resetSymptoms() {
+  document.querySelectorAll('[data-sym]').forEach(sl => { sl.value = 0; });
+  document.querySelectorAll('[data-symval]').forEach(s => { s.textContent = '–'; });
+}
 
 // ── Chips ─────────────────────────────────────────────────────────────────────
 
@@ -1258,22 +1413,125 @@ quickChipsEl.addEventListener('click', e => {
 const medInput = document.getElementById('medInput');
 const medList  = document.getElementById('medList');
 
+// ── Recurring schedules ───────────────────────────────────────────────────────
+
+const CADENCE_OPTS = [
+  ['', 'no repeat'],
+  ['1', 'daily'],
+  ['2', 'every 2 days'],
+  ['3', 'every 3 days'],
+  ['7', 'weekly'],
+  ['14', 'every 2 weeks'],
+  ['30', 'every 30 days'],
+];
+
+function cadenceLabel(days) {
+  const hit = CADENCE_OPTS.find(([v]) => +v === days);
+  return hit ? hit[1] : `every ${days} days`;
+}
+
+function lastDoseTime(medName) {
+  let last = null;
+  loadDoses().forEach(d => {
+    if (d.med !== medName) return;
+    const t = +new Date(d.timestamp);
+    if (last == null || t > last) last = t;
+  });
+  return last;
+}
+
+function isDue(m) {
+  if (!m.cadenceDays) return false;
+  const last = lastDoseTime(m.name);
+  if (last == null) return true; // never dosed — due to start
+  return Date.now() - last >= m.cadenceDays * DAY;
+}
+
+// "Auto" meds get dose events backfilled at their scheduled times since the
+// last logged dose. The schedule anchors on a real dose, so the first 💊 tap
+// keeps the auto-trail aligned with when the user actually takes it.
+function autoLogScheduledDoses() {
+  const doses = loadDoses();
+  let added = 0;
+  loadMeds().forEach(m => {
+    if (!m.autoLog || !m.cadenceDays) return;
+    let last = null;
+    doses.forEach(d => {
+      if (d.med !== m.name) return;
+      const t = +new Date(d.timestamp);
+      if (last == null || t > last) last = t;
+    });
+    if (last == null) return;
+    const step = m.cadenceDays * DAY;
+    for (let t = last + step; t <= Date.now() && added < 500; t += step) {
+      doses.push({ id: uid(), timestamp: new Date(t).toISOString(), med: m.name, auto: true });
+      added++;
+    }
+  });
+  if (added) saveList(DOSE_KEY, doses);
+  return added;
+}
+
 function renderMeds() {
   const meds = loadMeds();
   medList.innerHTML = meds.length
-    ? meds.map(m => `
-        <span class="med-item${m.active ? ' active' : ''}" data-id="${m.id}" role="switch" aria-checked="${m.active}" tabindex="0">
-          <span class="med-dot"></span>${escapeHtml(m.name)}
-          <button class="med-dose" data-dose="${escapeHtml(m.name)}" title="Log a dose of ${escapeHtml(m.name)} now" aria-label="log dose of ${escapeHtml(m.name)}">💊</button>
-          <button class="med-x" data-del="${m.id}" aria-label="delete ${escapeHtml(m.name)}">×</button>
-        </span>`).join('')
+    ? meds.map(m => {
+        const due = isDue(m);
+        return `
+        <div class="med-row">
+          <span class="med-item${m.active ? ' active' : ''}" data-id="${m.id}" role="switch" aria-checked="${m.active}" tabindex="0">
+            <span class="med-dot"></span>${escapeHtml(m.name)}
+          </span>
+          ${due ? '<span class="med-due-badge">due</span>' : ''}
+          <span class="med-ctl">
+            <select class="med-cad" data-cad="${m.id}" title="How often this med repeats">
+              ${CADENCE_OPTS.map(([v, l]) => `<option value="${v}"${String(m.cadenceDays ?? '') === v ? ' selected' : ''}>${l}</option>`).join('')}
+            </select>
+            <label class="med-auto" title="Log doses automatically on this schedule, anchored to your last logged dose">
+              <input type="checkbox" data-auto="${m.id}"${m.autoLog ? ' checked' : ''}${m.cadenceDays ? '' : ' disabled'}>auto
+            </label>
+            <button class="med-dose${due ? ' due' : ''}" data-dose="${escapeHtml(m.name)}" title="Log a dose of ${escapeHtml(m.name)} now" aria-label="log dose of ${escapeHtml(m.name)}">💊</button>
+            <button class="med-x" data-del="${m.id}" aria-label="delete ${escapeHtml(m.name)}">×</button>
+          </span>
+        </div>`;
+      }).join('')
     : '<span class="empty">No medications yet — add one above</span>';
 
   const active = activeMedNames();
-  document.getElementById('medStackNote').textContent = active.length
-    ? `Current stack (saved with each pain log): ${active.join(', ')}. Tap 💊 to log a dose — doses show on the timeline.`
-    : 'Tap a medication to toggle it on/off. Active meds are saved with each pain log; tap 💊 to log a dose now.';
+  const due = loadMeds().filter(isDue).map(m => m.name);
+  const bits = [];
+  if (due.length) bits.push(`Due now: ${due.join(', ')} — tap 💊 to log.`);
+  bits.push(active.length
+    ? `Current stack (saved with each pain log): ${active.join(', ')}.`
+    : 'Tap a name to toggle it on/off — active meds are saved with each pain log. Set a cadence for due reminders, or check “auto” to log doses on schedule.');
+  document.getElementById('medStackNote').textContent = bits.join(' ');
 }
+
+medList.addEventListener('change', e => {
+  const meds = loadMeds();
+  if (e.target.dataset.cad) {
+    const m = meds.find(m => m.id === e.target.dataset.cad);
+    if (!m) return;
+    m.cadenceDays = +e.target.value || null;
+    if (!m.cadenceDays) m.autoLog = false;
+    saveMeds(meds);
+    autoLogScheduledDoses();
+    renderMeds();
+    refreshChart();
+    renderRecent();
+  } else if (e.target.dataset.auto) {
+    const m = meds.find(m => m.id === e.target.dataset.auto);
+    if (!m) return;
+    m.autoLog = e.target.checked;
+    saveMeds(meds);
+    if (m.autoLog && lastDoseTime(m.name) == null) {
+      alert(`Auto-logging for ${m.name} starts from your first logged dose — tap 💊 once to anchor the schedule.`);
+    }
+    const added = autoLogScheduledDoses();
+    renderMeds();
+    if (added) { refreshChart(); renderRecent(); }
+  }
+});
 
 function addMed() {
   const v = medInput.value.trim();
@@ -1341,8 +1599,11 @@ function rerenderAll() {
 
 document.getElementById('logPainBtn').addEventListener('click', () => {
   const painWhen = document.getElementById('painWhen');
-  savePain(+painSlider.value, +painWhen.value);
+  const painNote = document.getElementById('painNote');
+  savePain(+painSlider.value, +painWhen.value, painNote.value.trim() || null, collectSymptoms());
   painWhen.value = '0';
+  painNote.value = '';
+  resetSymptoms();
   flash(document.getElementById('logPainBtn'), 'Log Pain');
   rerenderAll();
 });
@@ -1396,14 +1657,18 @@ function buildAnnotations(expEntries, doseEntries) {
     };
   });
   doseEntries.forEach((d, i) => {
+    // Auto-logged doses can be dense (daily cadence) — draw them faint and
+    // unlabeled so manual doses stay readable.
+    const auto = !!d.auto;
     out[`d${i}`] = {
       type: 'line',
       xMin: +new Date(d.timestamp),
       xMax: +new Date(d.timestamp),
-      borderColor: 'rgba(14,165,233,0.55)',
-      borderWidth: 1.5,
+      borderColor: auto ? 'rgba(14,165,233,0.28)' : 'rgba(14,165,233,0.55)',
+      borderWidth: auto ? 1 : 1.5,
+      borderDash: auto ? [2, 3] : undefined,
       label: {
-        display: true,
+        display: !auto,
         content: d.med,
         position: 'end',
         rotation: -90,
@@ -1441,7 +1706,7 @@ function refreshChart() {
   const expEntries  = loadExp().filter(e  => +new Date(e.timestamp) >= start);
   const doseEntries = loadDoses().filter(d => +new Date(d.timestamp) >= start);
 
-  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain, meds: e.meds || [], weather: e.weather }));
+  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain, meds: e.meds || [], weather: e.weather, note: e.note, symptoms: e.symptoms }));
   const trendData   = rollingTrend(painEntries);
   const annotations = buildAnnotations(expEntries, doseEntries);
 
@@ -1515,8 +1780,10 @@ function refreshChart() {
               label: item => `Pain: ${item.parsed.y}`,
               afterLabel: item => {
                 const lines = [];
+                if (item.raw.symptoms) lines.push(fmtSymptoms(item.raw.symptoms));
                 if (item.raw.meds?.length) lines.push(`Meds: ${item.raw.meds.join(', ')}`);
                 if (item.raw.weather) lines.push(fmtWeather(item.raw.weather));
+                if (item.raw.note) lines.push(`“${item.raw.note}”`);
                 return lines.join('\n');
               }
             }
@@ -1670,7 +1937,18 @@ function renderCorrelation() {
     ? `<br><span class="warn-co" title="These can't be separated statistically — try logging them apart sometimes">⚠ usually logged with ${escapeHtml(r.coWarn)}</span>`
     : '');
 
-  el.innerHTML = `
+  // Plain-language headline: only speak up when the paired evidence is decent.
+  const confident = rows.filter(r => r.pairedN >= MIN_N);
+  let insight = '';
+  if (confident.length && confident[0].pairedDelta >= 1) {
+    const top = confident[0];
+    insight = `<p class="corr-note"><b>Strongest suspect so far:</b> ${escapeHtml(top.item)} — pain runs
+      ${top.pairedDelta.toFixed(1)} higher in the 24h after logging it (n=${top.pairedN}${top.coWarn ? `; ⚠ entangled with ${escapeHtml(top.coWarn)}` : ''}).</p>`;
+  } else if (!confident.length) {
+    insight = `<p class="corr-note">No trigger has ${MIN_N}+ paired exposures yet — the Δ column firms up as data accumulates.</p>`;
+  }
+
+  el.innerHTML = insight + `
     <p class="corr-note"><b>Δ after−before</b> compares each exposure against itself: average pain in the 24h <i>after</i> minus
     the 24h <i>before</i> — red means pain reliably rises after that trigger. Window columns show average pain in each interval
     after exposure (overall baseline: <b>${baseline.toFixed(1)}</b>). Faded values rest on fewer than ${MIN_N} readings —
@@ -1748,19 +2026,23 @@ function renderRecent() {
   const painList = document.getElementById('recentPain');
   const expList  = document.getElementById('recentExposure');
 
+  const ts = e => `<span class="ri-ts">${fmtTime(e.timestamp)} · ${relTime(e.timestamp)}</span>`;
+
   painList.innerHTML = painCol.length
     ? painCol.map(e => e.kind === 'dose'
         ? `<li class="ri"><div class="ri-row"><div>
-            <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
-            <span class="ri-meds">💊 Dose: ${escapeHtml(e.med)}</span>
+            ${ts(e)}<br>
+            <span class="ri-meds">💊 Dose: ${escapeHtml(e.med)}${e.auto ? ' <span class="ri-ts">(auto)</span>' : ''}</span>
           </div><div class="ri-actions">
             <button class="ri-btn" data-del-dose="${e.id}" title="Delete dose">✕</button>
           </div></div></li>`
         : `<li class="ri"><div class="ri-row"><div>
-            <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+            ${ts(e)}<br>
             <span class="ri-pain" style="color:${painColor(e.pain)}">Pain ${e.pain}</span>
+            ${e.symptoms ? `<br><span class="ri-ts">${escapeHtml(fmtSymptoms(e.symptoms))}</span>` : ''}
             ${e.meds?.length ? `<br><span class="ri-meds">💊 ${escapeHtml(e.meds.join(', '))}</span>` : ''}
             ${e.weather ? `<br><span class="ri-ts">${fmtWeather(e.weather)}</span>` : ''}
+            ${e.note ? `<br><span class="ri-note">“${escapeHtml(e.note)}”</span>` : ''}
           </div><div class="ri-actions">
             <button class="ri-btn" data-edit="${e.id}" title="Edit pain value">✎</button>
             <button class="ri-btn" data-del-pain="${e.id}" title="Delete entry">✕</button>
@@ -1771,7 +2053,7 @@ function renderRecent() {
     ? expLog.map(e => {
         const ilbl = e.items.length ? escapeHtml(e.items.join(', ')) : '(no items)';
         return `<li class="ri"><div class="ri-row"><div>
-          <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+          ${ts(e)}<br>
           <span class="ri-items">${ilbl}</span>
         </div><div class="ri-actions">
           <button class="ri-btn" data-del-exp="${e.id}" title="Delete entry">✕</button>
@@ -1807,11 +2089,16 @@ function download(content, filename, type) {
 }
 
 document.getElementById('expPainCsv').addEventListener('click', () => {
-  const rows = ['timestamp,pain,meds,temp_c,humidity_pct,pressure_hpa,pollen',
+  const rows = ['timestamp,pain,congestion,sinus_pressure,headache,postnasal_drip,meds,note,temp_c,humidity_pct,pressure_hpa,pollen',
     ...loadPain().map(e => [
       e.timestamp,
       e.pain,
+      e.symptoms?.congestion ?? '',
+      e.symptoms?.pressure ?? '',
+      e.symptoms?.headache ?? '',
+      e.symptoms?.drip ?? '',
       `"${(e.meds || []).join('; ')}"`,
+      `"${(e.note || '').replace(/"/g, '""')}"`,
       e.weather?.tempC ?? '',
       e.weather?.humidity ?? '',
       e.weather?.pressure != null ? Math.round(e.weather.pressure) : '',
@@ -1888,6 +2175,34 @@ importFile.addEventListener('change', async () => {
   renderMeds();
   rerenderAll();
   alert(`Imported ${p} pain, ${x} exposure, ${d} dose and ${m} medication entries. Duplicates were skipped.`);
+});
+
+// ── Merge / rename triggers ───────────────────────────────────────────────────
+
+function mergeTrigger(from, to) {
+  const log = loadExp();
+  let changed = 0;
+  log.forEach(e => {
+    if (e.items?.includes(from)) {
+      e.items = [...new Set(e.items.map(i => i === from ? to : i))];
+      changed++;
+    }
+  });
+  if (changed) saveList(EXP_KEY, log);
+  return changed;
+}
+
+document.getElementById('mergeTriggerBtn').addEventListener('click', () => {
+  const known = knownItems().sort();
+  if (!known.length) { alert('No exposure items logged yet.'); return; }
+  const from = prompt(`Trigger to rename (or merge into another):\n\n${known.join(', ')}`)?.trim().toLowerCase();
+  if (!from) return;
+  if (!known.includes(from)) { alert(`“${from}” isn't in the exposure log.`); return; }
+  const to = prompt(`New name for “${from}” — use an existing name to merge their histories:`)?.trim().toLowerCase();
+  if (!to || to === from) return;
+  const n = mergeTrigger(from, to);
+  rerenderAll();
+  alert(`Updated ${n} exposure entr${n === 1 ? 'y' : 'ies'}: “${from}” → “${to}”.`);
 });
 
 // ── Backup status & weather toggle ────────────────────────────────────────────
@@ -1983,7 +2298,8 @@ document.getElementById('expReport').addEventListener('click', () => {
       ${trigRows}
     </table>` : ''}
     <h2>Medications</h2>
-    <p>Current stack: ${activeMedNames().map(escapeHtml).join(', ') || 'none'}</p>
+    <p>Current stack: ${loadMeds().filter(m => m.active).map(m =>
+      escapeHtml(m.name) + (m.cadenceDays ? ` (${cadenceLabel(m.cadenceDays)})` : '')).join(', ') || 'none'}</p>
     ${doseCounts.size ? `<p>Doses logged in the last 30 days: ${[...doseCounts.entries()].map(([m, n]) => `${escapeHtml(m)} ×${n}`).join(', ')}</p>` : ''}
     <button onclick="print()">Print</button>
   </body></html>`);
@@ -1993,6 +2309,7 @@ document.getElementById('expReport').addEventListener('click', () => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 migrate();
+autoLogScheduledDoses();
 
 // Ask the browser not to evict our storage under pressure (best-effort).
 if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});

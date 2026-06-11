@@ -36,8 +36,23 @@ Ordered by value-per-effort, from the design review.
 - [x] Hour-of-day × day-of-week pain heatmap
 - [x] Printable doctor report (summary stats, suspected triggers with n, med history)
 
-## Deferred (not in this pass)
-- Multi-symptom scores (pressure / congestion / headache / drip) — schema change, UI weight
+## 7. Recurring medications
+- [x] Per-med cadence (no repeat / daily / every 2–3 days / weekly / every 2 weeks / every 30 days)
+- [x] "Due" badge + highlighted 💊 when a med is past its cadence
+- [x] Optional auto-log: doses backfilled at scheduled times since the last real dose (anchored to the first manual dose; capped; idempotent)
+- [x] Auto doses drawn faint/unlabeled on the chart so manual doses stay readable; tagged "(auto)" in recents
+- [x] Cadence shown in the doctor report med list
+
+## 8. Remaining round-1/round-3 items
+- [x] Free-text note per pain log (tooltip, recents, CSV)
+- [x] Optional multi-symptom scores (congestion / sinus pressure / headache / post-nasal drip), collapsed by default; stored only when set; in tooltip, recents, CSV
+- [x] Merge/rename triggers tool (rewrites exposure history, dedupes)
+- [x] Plain-language insight headline above the correlation table (only when n ≥ 3)
+- [x] Relative timestamps in Recent Entries ("5h ago")
+
+## Deferred (judged not worth it for this app)
 - Per-item timestamps within one exposure batch — quick-log chips cover most of the need
 - IndexedDB migration — localStorage volume is tiny; durability work above matters more
 - Cloud sync — export/import-with-merge is the offline-first version of this
+- Daily min/avg/max bands when zoomed out — the 24h trend line + zoom presets already make long ranges readable
+- Event-sourcing refactor of storage — no user-facing value at this scale; risk without payoff

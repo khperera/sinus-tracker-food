@@ -6,9 +6,9 @@ Tracks sinus pain levels and food/encounter exposures separately, with a zoomabl
 
 ## Features
 
-- **Pain log** — 1–10 slider, log a reading now or backdate it ("30 min ago" → "12 hours ago")
-- **Exposure log** — add foods/encounters as chips, set how far back the time window goes (30 min → 12 hours); one-tap quick-log chips for your most frequent items; "did you mean…?" prompt keeps trigger spellings consolidated
-- **Medication stack & doses** — toggleable stack saved with each pain log, plus one-tap 💊 dose events that appear on the timeline
+- **Pain log** — 1–10 slider, log a reading now or backdate it ("30 min ago" → "12 hours ago"); optional note and secondary symptom scores (congestion, pressure, headache, post-nasal drip)
+- **Exposure log** — add foods/encounters as chips, set how far back the time window goes (30 min → 12 hours); one-tap quick-log chips for your most frequent items; "did you mean…?" prompt and a merge tool keep trigger spellings consolidated
+- **Medication stack, doses & schedules** — toggleable stack saved with each pain log; one-tap 💊 dose events on the timeline; per-med repeat cadence (daily → every 30 days) with "due" reminders, and optional auto-logging that backfills scheduled doses anchored to your last real one
 - **Timeline chart** — scatter plot of pain over absolute time; dashed orange lines mark exposures, solid blue lines mark med doses, grey line shows the 24h rolling trend
 - **Zoom & pan** — scroll to zoom the time axis, drag to pan, preset buttons (Today / 7d / 30d / All)
 - **Trigger ↔ pain correlation** — paired analysis: each exposure is compared against itself (avg pain 24h after − 24h before), with sample sizes shown, low-n cells faded, and warnings when two triggers always co-occur
@@ -29,8 +29,8 @@ Tracks sinus pain levels and food/encounter exposures separately, with a zoomabl
 
 **Pain CSV**
 ```
-timestamp,pain,meds,temp_c,humidity_pct,pressure_hpa,pollen
-2026-06-11T14:32:00.000Z,7,"flonase; zyrtec",21.4,48,1013,12
+timestamp,pain,congestion,sinus_pressure,headache,postnasal_drip,meds,note,temp_c,humidity_pct,pressure_hpa,pollen
+2026-06-11T14:32:00.000Z,7,6,4,,,"flonase; zyrtec","woke up congested",21.4,48,1013,12
 ```
 
 **Exposure CSV**
@@ -39,10 +39,10 @@ timestamp,hours_before,items
 2026-06-11T11:00:00.000Z,4,"coffee,wine,dusty room"
 ```
 
-**Full JSON** (schema v2 — re-importable with merge-by-id)
+**Full JSON** (schema v3 — re-importable with merge-by-id; medications carry `cadenceDays`/`autoLog`, auto-backfilled doses are flagged `"auto": true`)
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "exportedAt": "2026-06-11T14:32:00.000Z",
   "painLog": [],
   "exposureLog": [],
