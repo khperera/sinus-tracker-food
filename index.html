@@ -1697,6 +1697,9 @@ function rollingTrend(painEntries) {
 }
 
 function refreshChart() {
+  // If the CDN failed (offline first visit), logging must still work — the
+  // chart just stays blank until the libraries load on a later visit.
+  if (typeof Chart === 'undefined') return;
   const start = getRangeStart(activeRange);
   const now   = Date.now();
   const span  = now - start;
