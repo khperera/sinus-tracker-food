@@ -973,6 +973,20 @@
       <input type="text" id="medInput" placeholder="Add a medication…" autocomplete="off">
       <button class="btn-med-add" id="addMedBtn">Add</button>
     </div>
+    <div class="when-row">
+      <label for="medWhen">Dose</label>
+      <select id="medWhen" class="when-select" title="When the next 💊 tap should be logged">
+        <option value="0" selected>Now</option>
+        <option value="0.5">30 min ago</option>
+        <option value="1">1 hour ago</option>
+        <option value="2">2 hours ago</option>
+        <option value="3">3 hours ago</option>
+        <option value="4">4 hours ago</option>
+        <option value="6">6 hours ago</option>
+        <option value="8">8 hours ago</option>
+        <option value="12">12 hours ago</option>
+      </select>
+    </div>
     <div class="med-list" id="medList"></div>
     <p class="med-stack-note" id="medStackNote"></p>
   </div>
@@ -1131,9 +1145,9 @@ function saveExp(hoursBefore, items) {
   saveList(EXP_KEY, log);
 }
 
-function saveDose(med) {
+function saveDose(med, hoursAgo = 0) {
   const log = loadDoses();
-  log.push({ id: uid(), timestamp: new Date().toISOString(), med });
+  log.push({ id: uid(), timestamp: new Date(Date.now() - hoursAgo * 3600000).toISOString(), med });
   saveList(DOSE_KEY, log);
 }
 
@@ -1593,7 +1607,12 @@ medList.addEventListener('change', e => {
     const m = meds.find(m => m.id === e.target.dataset.cad);
     if (!m) return;
     m.cadenceDays = +e.target.value || null;
-    if (!m.cadenceDays) { m.autoLog = false; m.anchorTime = null; }
+    if (!m.cadenceDays) {
+      m.autoLog = false;
+      m.anchorTime = null;
+      // Recurrence off — drop the synthetic auto-logged doses it had projected.
+      saveList(DOSE_KEY, loadDoses().filter(d => !(d.med === m.name && d.auto)));
+    }
     saveMeds(meds);
     autoLogScheduledDoses();
     renderMeds();
@@ -1640,7 +1659,9 @@ medInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDe
 medList.addEventListener('click', e => {
   const dose = e.target.closest('.med-dose');
   if (dose) {
-    saveDose(dose.dataset.dose);
+    const whenSel = document.getElementById('medWhen');
+    saveDose(dose.dataset.dose, +whenSel.value || 0);
+    whenSel.value = '0'; // reset to "Now" so the next tap isn't silently back-dated
     dose.textContent = '✓';
     setTimeout(renderMeds, 900);
     rerenderAll();
@@ -1648,8 +1669,18 @@ medList.addEventListener('click', e => {
   }
   const del = e.target.closest('.med-x');
   if (del) {
-    saveMeds(loadMeds().filter(m => m.id !== del.dataset.del));
+    const meds = loadMeds();
+    const m = meds.find(x => x.id === del.dataset.del);
+    if (!m) return;
+    const autoCount = loadDoses().filter(d => d.med === m.name && d.auto).length;
+    const msg = autoCount
+      ? `Remove ${m.name}? This also clears ${autoCount} auto-logged dose${autoCount === 1 ? '' : 's'} from its schedule. Manually logged doses are kept.`
+      : `Remove ${m.name}?`;
+    if (!confirm(msg)) return;
+    saveMeds(meds.filter(x => x.id !== m.id));
+    if (autoCount) saveList(DOSE_KEY, loadDoses().filter(d => !(d.med === m.name && d.auto)));
     renderMeds();
+    rerenderAll();
     return;
   }
   const item = e.target.closest('.med-item');
