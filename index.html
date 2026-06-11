@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sinus Tracker</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -611,6 +618,170 @@
       color: var(--text);
       border-color: #94a3b8;
     }
+
+    /* ── Backdating, quick-log, entry actions ───────────────────── */
+
+    .when-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.125rem;
+    }
+
+    .when-row label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .when-select {
+      flex: 1;
+      padding: 0.375rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+      margin-top: 0.875rem;
+    }
+
+    .quick-lbl {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .quick-chip {
+      padding: 0.25rem 0.625rem;
+      border: 1px solid #fed7aa;
+      border-radius: 999px;
+      background: #fff7ed;
+      color: #c2410c;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .quick-chip:hover { background: #ffedd5; }
+
+    @media (prefers-color-scheme: dark) {
+      .quick-chip { background: #431407; border-color: #7c2d12; color: #fb923c; }
+      .quick-chip:hover { background: #7c2d12; }
+    }
+
+    .ri-row { display: flex; justify-content: space-between; gap: 0.5rem; }
+    .ri-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+
+    .ri-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.1s;
+    }
+
+    .ri-btn:hover { color: var(--text); border-color: #94a3b8; }
+
+    .med-dose {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+      padding: 0 0.375rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      transition: all 0.1s;
+    }
+
+    .med-dose:hover { border-color: #0ea5e9; background: #e0f2fe; }
+    @media (prefers-color-scheme: dark) { .med-dose:hover { background: #0c4a6e; } }
+
+    .lg-line { width: 18px; border-top: 2px solid rgba(100,116,139,0.7); }
+    .lg-dose { width: 18px; border-top: 2px solid #38bdf8; }
+
+    /* ── Correlation confidence ─────────────────────────────────── */
+
+    .heat.low-n, .low-n { opacity: 0.45; }
+
+    .cell-n {
+      display: block;
+      font-size: 0.625rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .warn-co { font-size: 0.7rem; font-weight: 500; color: #b45309; }
+    @media (prefers-color-scheme: dark) { .warn-co { color: #fbbf24; } }
+
+    /* ── Hour × day heatmap ─────────────────────────────────────── */
+
+    .hm {
+      display: grid;
+      grid-template-columns: 2.25rem repeat(24, 1fr);
+      gap: 2px;
+      margin-top: 0.875rem;
+    }
+
+    .hm-h { font-size: 0.6rem; color: var(--muted); }
+    .hm-d { font-size: 0.65rem; color: var(--muted); align-self: center; }
+
+    .hm-c {
+      aspect-ratio: 1;
+      min-width: 0;
+      border-radius: 2px;
+      background: var(--track);
+      opacity: 0.92;
+    }
+
+    /* ── Data & backup card ─────────────────────────────────────── */
+
+    .backup-note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+
+    .backup-note.overdue { color: #b45309; font-weight: 500; }
+    @media (prefers-color-scheme: dark) { .backup-note.overdue { color: #fbbf24; } }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.875rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .settings-row input { accent-color: #f97316; }
   </style>
 </head>
 <body>
@@ -631,6 +802,20 @@
         <input type="range" id="painSlider" min="1" max="10" value="5" step="1">
         <span class="lbl">10</span>
       </div>
+      <div class="when-row">
+        <label for="painWhen">When</label>
+        <select id="painWhen" class="when-select">
+          <option value="0" selected>Now</option>
+          <option value="0.5">30 min ago</option>
+          <option value="1">1 hour ago</option>
+          <option value="2">2 hours ago</option>
+          <option value="3">3 hours ago</option>
+          <option value="4">4 hours ago</option>
+          <option value="6">6 hours ago</option>
+          <option value="8">8 hours ago</option>
+          <option value="12">12 hours ago</option>
+        </select>
+      </div>
       <button class="btn btn-pain" id="logPainBtn">Log Pain</button>
     </div>
 
@@ -647,6 +832,7 @@
       <datalist id="itemsDatalist"></datalist>
       <div class="chips" id="chips"></div>
       <button class="btn btn-exposure" id="logExposureBtn">Log Exposure</button>
+      <div class="quick-chips" id="quickChips"></div>
     </div>
 
   </div>
@@ -677,12 +863,19 @@
     <div class="chart-legend">
       <span class="legend-item"><span class="lg-dot"></span> Pain level</span>
       <span class="legend-item"><span class="lg-dash"></span> Exposure</span>
+      <span class="legend-item"><span class="lg-dose"></span> Med dose</span>
+      <span class="legend-item"><span class="lg-line"></span> 24h trend</span>
     </div>
   </div>
 
   <details class="card" open>
     <summary>Trigger ↔ Pain Correlation</summary>
     <div id="corrContent"></div>
+  </details>
+
+  <details class="card">
+    <summary>Patterns by Hour &amp; Day</summary>
+    <div id="heatmapContent"></div>
   </details>
 
   <details class="card">
@@ -699,10 +892,21 @@
     </div>
   </details>
 
-  <div class="export-row">
-    <button class="btn" id="expPainCsv">↓ Pain CSV</button>
-    <button class="btn" id="expExposureCsv">↓ Exposure CSV</button>
-    <button class="btn" id="expJson">↓ Full JSON</button>
+  <div class="card">
+    <div class="panel-label">Data &amp; Backup</div>
+    <p class="backup-note" id="backupNote"></p>
+    <label class="settings-row">
+      <input type="checkbox" id="weatherToggle">
+      Capture weather &amp; pollen with each pain log (uses device location, stored only in this browser)
+    </label>
+    <div class="export-row">
+      <button class="btn" id="expPainCsv">↓ Pain CSV</button>
+      <button class="btn" id="expExposureCsv">↓ Exposure CSV</button>
+      <button class="btn" id="expJson">↓ Full JSON</button>
+      <button class="btn" id="impJson">⇡ Import JSON</button>
+      <button class="btn" id="expReport">🖨 Doctor Report</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
   </div>
 
 </div>
@@ -716,28 +920,101 @@
 <script>
 // ── Storage ───────────────────────────────────────────────────────────────────
 
-const PAIN_KEY = 'sinusPainLog';
-const EXP_KEY  = 'sinusExposureLog';
-const MEDS_KEY = 'sinusMeds';
+const PAIN_KEY     = 'sinusPainLog';
+const EXP_KEY      = 'sinusExposureLog';
+const MEDS_KEY     = 'sinusMeds';
+const DOSE_KEY     = 'sinusMedDoses';
+const SETTINGS_KEY = 'sinusSettings';
+const SCHEMA_VERSION = 2;
+const DAY = 86400000;
 
-const loadPain = () => { try { return JSON.parse(localStorage.getItem(PAIN_KEY) || '[]'); } catch { return []; } };
-const loadExp  = () => { try { return JSON.parse(localStorage.getItem(EXP_KEY)  || '[]'); } catch { return []; } };
-const loadMeds = () => { try { return JSON.parse(localStorage.getItem(MEDS_KEY) || '[]'); } catch { return []; } };
+const uid = () => (crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
-const saveMeds = meds => localStorage.setItem(MEDS_KEY, JSON.stringify(meds));
+// A corrupt blob is preserved under a *_corrupt_* key — otherwise the next
+// save would push one entry onto [] and silently overwrite the whole history.
+function loadList(key) {
+  const raw = localStorage.getItem(key);
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    try { localStorage.setItem(`${key}_corrupt_${Date.now()}`, raw); } catch {}
+    localStorage.removeItem(key);
+    return [];
+  }
+}
+
+const saveList  = (key, v) => localStorage.setItem(key, JSON.stringify(v));
+const loadPain  = () => loadList(PAIN_KEY);
+const loadExp   = () => loadList(EXP_KEY);
+const loadMeds  = () => loadList(MEDS_KEY);
+const loadDoses = () => loadList(DOSE_KEY);
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {}; }
+  catch { return {}; }
+}
+const saveSettings = s => localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+
+const saveMeds = meds => saveList(MEDS_KEY, meds);
 const activeMedNames = () => loadMeds().filter(m => m.active).map(m => m.name);
 
-function savePain(pain) {
+function savePain(pain, hoursAgo = 0) {
   const log = loadPain();
-  log.push({ id: String(Date.now()), timestamp: new Date().toISOString(), pain, meds: activeMedNames() });
-  localStorage.setItem(PAIN_KEY, JSON.stringify(log));
+  const entry = {
+    id: uid(),
+    timestamp: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
+    pain,
+    meds: activeMedNames(),
+  };
+  log.push(entry);
+  saveList(PAIN_KEY, log);
+  captureWeather(entry.id);
 }
 
 function saveExp(hoursBefore, items) {
   const log = loadExp();
-  const exposureTime = new Date(Date.now() - hoursBefore * 3600000);
-  log.push({ id: String(Date.now()), timestamp: exposureTime.toISOString(), items });
-  localStorage.setItem(EXP_KEY, JSON.stringify(log));
+  log.push({
+    id: uid(),
+    timestamp: new Date(Date.now() - hoursBefore * 3600000).toISOString(),
+    hoursBefore,
+    items,
+  });
+  saveList(EXP_KEY, log);
+}
+
+function saveDose(med) {
+  const log = loadDoses();
+  log.push({ id: uid(), timestamp: new Date().toISOString(), med });
+  saveList(DOSE_KEY, log);
+}
+
+function deleteEntry(key, id) {
+  saveList(key, loadList(key).filter(e => e.id !== id));
+}
+
+function updatePainValue(id, pain) {
+  const log = loadPain();
+  const e = log.find(e => e.id === id);
+  if (e) { e.pain = pain; saveList(PAIN_KEY, log); }
+}
+
+// Legacy entries used String(Date.now()) ids, which collide; ensure every
+// entry has a unique id so delete/edit and import-merge are reliable.
+function migrate() {
+  [PAIN_KEY, EXP_KEY, MEDS_KEY, DOSE_KEY].forEach(key => {
+    const list = loadList(key);
+    const seen = new Set();
+    let changed = false;
+    list.forEach(e => {
+      if (!e.id || seen.has(e.id)) { e.id = uid(); changed = true; }
+      seen.add(e.id);
+    });
+    if (changed) saveList(key, list);
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -767,6 +1044,86 @@ function getChartColors() {
     grid:  isDark ? '#334155' : '#f1f5f9',
     ticks: isDark ? '#64748b' : '#94a3b8',
   };
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+// ── Weather capture (opt-in) ──────────────────────────────────────────────────
+
+function getCoords() {
+  const s = loadSettings();
+  if (s.coords) return Promise.resolve(s.coords);
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('no geolocation'));
+    navigator.geolocation.getCurrentPosition(pos => {
+      // Rounded to ~1 km so precise location never touches storage.
+      const coords = {
+        lat: +pos.coords.latitude.toFixed(2),
+        lon: +pos.coords.longitude.toFixed(2),
+      };
+      const s2 = loadSettings();
+      s2.coords = coords;
+      saveSettings(s2);
+      resolve(coords);
+    }, reject, { timeout: 10000 });
+  });
+}
+
+async function captureWeather(entryId) {
+  if (!loadSettings().weather) return;
+  try {
+    const { lat, lon } = await getCoords();
+    const base = `latitude=${lat}&longitude=${lon}`;
+    const [wx, aq] = await Promise.allSettled([
+      fetch(`https://api.open-meteo.com/v1/forecast?${base}&current=temperature_2m,relative_humidity_2m,surface_pressure`).then(r => r.json()),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${base}&current=alder_pollen,birch_pollen,grass_pollen,ragweed_pollen`).then(r => r.json()),
+    ]);
+    const weather = {};
+    if (wx.status === 'fulfilled' && wx.value.current) {
+      const c = wx.value.current;
+      if (c.temperature_2m        != null) weather.tempC    = c.temperature_2m;
+      if (c.relative_humidity_2m  != null) weather.humidity = c.relative_humidity_2m;
+      if (c.surface_pressure      != null) weather.pressure = c.surface_pressure;
+    }
+    if (aq.status === 'fulfilled' && aq.value.current) {
+      const c = aq.value.current;
+      const vals = [c.alder_pollen, c.birch_pollen, c.grass_pollen, c.ragweed_pollen];
+      if (vals.some(v => v != null)) {
+        weather.pollen = Math.round(vals.reduce((s, v) => s + (v ?? 0), 0));
+      }
+    }
+    if (!Object.keys(weather).length) return;
+    const log = loadPain();
+    const e = log.find(e => e.id === entryId);
+    if (e) {
+      e.weather = weather;
+      saveList(PAIN_KEY, log);
+      refreshChart();
+      renderRecent();
+    }
+  } catch { /* weather is best-effort context, never block a pain log on it */ }
+}
+
+function fmtWeather(w) {
+  const parts = [];
+  if (w.tempC    != null) parts.push(`${w.tempC}°C`);
+  if (w.humidity != null) parts.push(`${w.humidity}% rh`);
+  if (w.pressure != null) parts.push(`${Math.round(w.pressure)} hPa`);
+  if (w.pollen   != null) parts.push(`pollen ${w.pollen}`);
+  return parts.join(' · ');
 }
 
 // ── Pain Slider ───────────────────────────────────────────────────────────────
@@ -825,24 +1182,75 @@ function renderChips() {
   });
 }
 
-function updateDatalist() {
+function knownItems() {
   const seen = new Set();
   loadExp().forEach(e => (e.items || []).forEach(i => seen.add(i)));
+  return [...seen];
+}
+
+function updateDatalist() {
   document.getElementById('itemsDatalist').innerHTML =
-    [...seen].sort().map(i => `<option value="${escapeHtml(i)}">`).join('');
+    knownItems().sort().map(i => `<option value="${escapeHtml(i)}">`).join('');
+}
+
+// Near-duplicate spellings ("coffe", "coffees") split one trigger into several
+// correlation rows; offer the existing name before accepting a new one.
+function canonicalize(v) {
+  const known = knownItems();
+  if (known.includes(v) || v.length <= 3) return v;
+  let best = null, bestDist = 3;
+  for (const k of known) {
+    if (Math.abs(k.length - v.length) > 2) continue;
+    const d = levenshtein(v, k);
+    if (d < bestDist) { bestDist = d; best = k; }
+  }
+  if (best && bestDist <= 2 &&
+      confirm(`Use existing “${best}” instead of “${v}”?\n\nKeeping one spelling per trigger makes the correlation table much stronger.`)) {
+    return best;
+  }
+  return v;
 }
 
 itemsInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
     const v = itemsInput.value.trim().toLowerCase().replace(/,$/, '');
-    if (v) { items.push(v); renderChips(); itemsInput.value = ''; }
+    if (v) { items.push(canonicalize(v)); renderChips(); itemsInput.value = ''; }
   }
 });
 
 chipsEl.addEventListener('click', e => {
   const btn = e.target.closest('.chip-x');
   if (btn) { items.splice(+btn.dataset.i, 1); renderChips(); }
+});
+
+// ── Quick-log chips ───────────────────────────────────────────────────────────
+
+const quickChipsEl = document.getElementById('quickChips');
+
+function renderQuickChips() {
+  const freq = new Map();
+  loadExp().forEach(e => (e.items || []).forEach(i => freq.set(i, (freq.get(i) || 0) + 1)));
+  const top = [...freq.entries()]
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+  quickChipsEl.innerHTML = top.length
+    ? '<span class="quick-lbl">Quick log:</span>' + top.map(([item]) =>
+        `<button class="quick-chip" data-item="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join('')
+    : '';
+}
+
+quickChipsEl.addEventListener('click', e => {
+  const btn = e.target.closest('.quick-chip');
+  if (!btn) return;
+  saveExp(HOURS_VALUES[+hoursSlider.value], [btn.dataset.item]);
+  btn.textContent = '✓ ' + btn.dataset.item;
+  setTimeout(renderQuickChips, 900);
+  refreshChart();
+  renderRecent();
+  renderCorrelation();
+  renderBackupNote();
 });
 
 // ── Medications ───────────────────────────────────────────────────────────────
@@ -856,14 +1264,15 @@ function renderMeds() {
     ? meds.map(m => `
         <span class="med-item${m.active ? ' active' : ''}" data-id="${m.id}" role="switch" aria-checked="${m.active}" tabindex="0">
           <span class="med-dot"></span>${escapeHtml(m.name)}
+          <button class="med-dose" data-dose="${escapeHtml(m.name)}" title="Log a dose of ${escapeHtml(m.name)} now" aria-label="log dose of ${escapeHtml(m.name)}">💊</button>
           <button class="med-x" data-del="${m.id}" aria-label="delete ${escapeHtml(m.name)}">×</button>
         </span>`).join('')
     : '<span class="empty">No medications yet — add one above</span>';
 
   const active = activeMedNames();
   document.getElementById('medStackNote').textContent = active.length
-    ? `Current stack (saved with each pain log): ${active.join(', ')}`
-    : 'Tap a medication to toggle it on/off. Active meds are saved with each pain log.';
+    ? `Current stack (saved with each pain log): ${active.join(', ')}. Tap 💊 to log a dose — doses show on the timeline.`
+    : 'Tap a medication to toggle it on/off. Active meds are saved with each pain log; tap 💊 to log a dose now.';
 }
 
 function addMed() {
@@ -882,6 +1291,15 @@ document.getElementById('addMedBtn').addEventListener('click', addMed);
 medInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addMed(); } });
 
 medList.addEventListener('click', e => {
+  const dose = e.target.closest('.med-dose');
+  if (dose) {
+    saveDose(dose.dataset.dose);
+    dose.textContent = '✓';
+    setTimeout(renderMeds, 900);
+    refreshChart();
+    renderRecent();
+    return;
+  }
   const del = e.target.closest('.med-x');
   if (del) {
     saveMeds(loadMeds().filter(m => m.id !== del.dataset.del));
@@ -911,12 +1329,22 @@ function flash(btn, label) {
   setTimeout(() => { btn.textContent = label; btn.classList.remove('logged'); }, 1500);
 }
 
-document.getElementById('logPainBtn').addEventListener('click', () => {
-  savePain(+painSlider.value);
-  flash(document.getElementById('logPainBtn'), 'Log Pain');
+function rerenderAll() {
   refreshChart();
   renderRecent();
   renderCorrelation();
+  renderHeatmap();
+  renderQuickChips();
+  updateDatalist();
+  renderBackupNote();
+}
+
+document.getElementById('logPainBtn').addEventListener('click', () => {
+  const painWhen = document.getElementById('painWhen');
+  savePain(+painSlider.value, +painWhen.value);
+  painWhen.value = '0';
+  flash(document.getElementById('logPainBtn'), 'Log Pain');
+  rerenderAll();
 });
 
 document.getElementById('logExposureBtn').addEventListener('click', () => {
@@ -925,10 +1353,7 @@ document.getElementById('logExposureBtn').addEventListener('click', () => {
   renderChips();
   itemsInput.value = '';
   flash(document.getElementById('logExposureBtn'), 'Log Exposure');
-  refreshChart();
-  renderRecent();
-  renderCorrelation();
-  updateDatalist();
+  rerenderAll();
 });
 
 // ── Chart ─────────────────────────────────────────────────────────────────────
@@ -941,11 +1366,11 @@ function getRangeStart(range) {
   if (range === 'today') return new Date().setHours(0, 0, 0, 0);
   if (range === '7d')    return now - 7  * 86400000;
   if (range === '30d')   return now - 30 * 86400000;
-  const all = [...loadPain(), ...loadExp()].map(e => +new Date(e.timestamp));
+  const all = [...loadPain(), ...loadExp(), ...loadDoses()].map(e => +new Date(e.timestamp));
   return all.length ? Math.min(...all) - 3600000 : now - 86400000;
 }
 
-function buildAnnotations(expEntries) {
+function buildAnnotations(expEntries, doseEntries) {
   const out = {};
   expEntries.forEach((e, i) => {
     const lbl = e.items.length
@@ -970,7 +1395,40 @@ function buildAnnotations(expEntries) {
       } : { display: false }
     };
   });
+  doseEntries.forEach((d, i) => {
+    out[`d${i}`] = {
+      type: 'line',
+      xMin: +new Date(d.timestamp),
+      xMax: +new Date(d.timestamp),
+      borderColor: 'rgba(14,165,233,0.55)',
+      borderWidth: 1.5,
+      label: {
+        display: true,
+        content: d.med,
+        position: 'end',
+        rotation: -90,
+        backgroundColor: 'rgba(14,165,233,0.82)',
+        color: '#fff',
+        font: { size: 9 },
+        padding: { x: 3, y: 2 }
+      }
+    };
+  });
   return out;
+}
+
+// Centered 24h rolling average — the eye reads a trend line far better than a
+// cloud of dots once a few weeks of data accumulate.
+function rollingTrend(painEntries) {
+  const pts = painEntries
+    .map(e => ({ t: +new Date(e.timestamp), p: e.pain }))
+    .sort((a, b) => a.t - b.t);
+  if (pts.length < 3) return [];
+  const HALF = 12 * 3600000;
+  return pts.map(pt => {
+    const w = pts.filter(q => q.t >= pt.t - HALF && q.t <= pt.t + HALF);
+    return { x: pt.t, y: w.reduce((s, q) => s + q.p, 0) / w.length };
+  });
 }
 
 function refreshChart() {
@@ -981,9 +1439,11 @@ function refreshChart() {
 
   const painEntries = loadPain().filter(e => +new Date(e.timestamp) >= start);
   const expEntries  = loadExp().filter(e  => +new Date(e.timestamp) >= start);
+  const doseEntries = loadDoses().filter(d => +new Date(d.timestamp) >= start);
 
-  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain, meds: e.meds || [] }));
-  const annotations = buildAnnotations(expEntries);
+  const painData    = painEntries.map(e => ({ x: +new Date(e.timestamp), y: e.pain, meds: e.meds || [], weather: e.weather }));
+  const trendData   = rollingTrend(painEntries);
+  const annotations = buildAnnotations(expEntries, doseEntries);
 
   let unit = 'hour';
   if (span > 60 * 86400000) unit = 'week';
@@ -1000,6 +1460,15 @@ function refreshChart() {
           pointBorderColor: 'transparent',
           pointRadius: 7,
           pointHoverRadius: 10,
+        }, {
+          type: 'line',
+          data: trendData,
+          borderColor: 'rgba(100,116,139,0.55)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0.35,
+          fill: false,
         }]
       },
       options: {
@@ -1038,12 +1507,18 @@ function refreshChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
+            filter: item => item.datasetIndex === 0,
             callbacks: {
               title: items => new Date(items[0].parsed.x).toLocaleString([], {
                 month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
               }),
               label: item => `Pain: ${item.parsed.y}`,
-              afterLabel: item => item.raw.meds?.length ? `Meds: ${item.raw.meds.join(', ')}` : ''
+              afterLabel: item => {
+                const lines = [];
+                if (item.raw.meds?.length) lines.push(`Meds: ${item.raw.meds.join(', ')}`);
+                if (item.raw.weather) lines.push(fmtWeather(item.raw.weather));
+                return lines.join('\n');
+              }
             }
           },
           zoom: {
@@ -1056,6 +1531,7 @@ function refreshChart() {
     });
   } else {
     chart.data.datasets[0].data = painData;
+    chart.data.datasets[1].data = trendData;
     chart.options.plugins.annotation.annotations = annotations;
     chart.options.scales.x.min  = start;
     chart.options.scales.x.max  = now;
@@ -1091,6 +1567,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 
 const CORR_WINDOWS = [[0, 4], [4, 12], [12, 24]];
 const CORR_LABELS  = ['0–4h', '4–12h', '12–24h'];
+const MIN_N = 3;
 
 function computeCorrelations() {
   const pain = loadPain().map(e => ({ t: +new Date(e.timestamp), pain: e.pain }));
@@ -1099,31 +1576,68 @@ function computeCorrelations() {
 
   const baseline = pain.reduce((s, e) => s + e.pain, 0) / pain.length;
   const map = new Map();
+  const ensure = item => {
+    if (!map.has(item)) {
+      map.set(item, {
+        count: 0,
+        windows: CORR_WINDOWS.map(() => ({ sum: 0, n: 0 })),
+        pairedDeltas: [],
+        co: new Map(),
+      });
+    }
+    return map.get(item);
+  };
 
   exp.forEach(e => {
     const t0 = +new Date(e.timestamp);
-    new Set(e.items).forEach(item => {
-      if (!map.has(item)) map.set(item, { count: 0, windows: CORR_WINDOWS.map(() => ({ sum: 0, n: 0 })), all: { sum: 0, n: 0 } });
-      const rec = map.get(item);
+    const uniq = [...new Set(e.items)];
+    uniq.forEach(item => {
+      const rec = ensure(item);
       rec.count++;
+      uniq.forEach(other => {
+        if (other !== item) rec.co.set(other, (rec.co.get(other) || 0) + 1);
+      });
+
+      // Paired comparison: each exposure is its own control — pain in the 24h
+      // after vs the 24h before. This absorbs trends, circadian patterns and
+      // "I log exposures when I already feel bad" bias that a global baseline
+      // comparison can't.
+      const before = [], after = [];
       pain.forEach(p => {
         const dh = (p.t - t0) / 3600000;
-        if (dh >= 0 && dh < 24) { rec.all.sum += p.pain; rec.all.n++; }
+        if (dh >= -24 && dh < 0) before.push(p.pain);
+        if (dh >= 0  && dh < 24) after.push(p.pain);
         CORR_WINDOWS.forEach((w, i) => {
           if (dh >= w[0] && dh < w[1]) { rec.windows[i].sum += p.pain; rec.windows[i].n++; }
         });
       });
+      if (before.length && after.length) {
+        rec.pairedDeltas.push(
+          after.reduce((s, v) => s + v, 0) / after.length -
+          before.reduce((s, v) => s + v, 0) / before.length
+        );
+      }
     });
   });
 
-  const rows = [...map.entries()].map(([item, rec]) => ({
-    item,
-    count: rec.count,
-    windows: rec.windows.map(w => w.n ? w.sum / w.n : null),
-    delta: rec.all.n ? rec.all.sum / rec.all.n - baseline : null,
-  }));
+  const rows = [...map.entries()].map(([item, rec]) => {
+    let coWarn = null;
+    for (const [other, n] of rec.co) {
+      if (rec.count >= 2 && n / rec.count >= 0.8) { coWarn = other; break; }
+    }
+    return {
+      item,
+      count: rec.count,
+      coWarn,
+      windows: rec.windows.map(w => w.n ? { avg: w.sum / w.n, n: w.n } : null),
+      pairedN: rec.pairedDeltas.length,
+      pairedDelta: rec.pairedDeltas.length
+        ? rec.pairedDeltas.reduce((s, v) => s + v, 0) / rec.pairedDeltas.length
+        : null,
+    };
+  });
 
-  rows.sort((a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity));
+  rows.sort((a, b) => (b.pairedDelta ?? -Infinity) - (a.pairedDelta ?? -Infinity));
   return { baseline, rows };
 }
 
@@ -1138,17 +1652,29 @@ function renderCorrelation() {
 
   const { baseline, rows } = result;
 
-  const heat = v => v == null
-    ? '<span class="dim">–</span>'
-    : `<span class="heat" style="background:${painColor(v)}">${v.toFixed(1)}</span>`;
+  const heat = w => {
+    if (!w) return '<span class="dim">–</span>';
+    const low = w.n < MIN_N;
+    return `<span class="heat${low ? ' low-n' : ''}" style="background:${painColor(w.avg)}" title="${w.n} pain reading${w.n === 1 ? '' : 's'}${low ? ' — needs more data' : ''}">${w.avg.toFixed(1)}</span><span class="cell-n">n=${w.n}</span>`;
+  };
 
-  const delta = d => d == null
-    ? '<span class="dim">–</span>'
-    : `<span class="${d >= 0.05 ? 'delta-up' : d <= -0.05 ? 'delta-down' : 'dim'}">${d >= 0 ? '+' : ''}${d.toFixed(1)}</span>`;
+  const paired = r => {
+    if (r.pairedDelta == null) return '<span class="dim">–</span>';
+    const d = r.pairedDelta;
+    const cls = d >= 0.05 ? 'delta-up' : d <= -0.05 ? 'delta-down' : 'dim';
+    const low = r.pairedN < MIN_N;
+    return `<span class="${cls}${low ? ' low-n' : ''}" title="${r.pairedN} exposure${r.pairedN === 1 ? '' : 's'} with pain data on both sides">${d >= 0 ? '+' : ''}${d.toFixed(1)}</span><span class="cell-n">n=${r.pairedN}</span>`;
+  };
+
+  const trigger = r => escapeHtml(r.item) + (r.coWarn
+    ? `<br><span class="warn-co" title="These can't be separated statistically — try logging them apart sometimes">⚠ usually logged with ${escapeHtml(r.coWarn)}</span>`
+    : '');
 
   el.innerHTML = `
-    <p class="corr-note">Average pain logged in each time window after a trigger, vs your overall baseline of <b>${baseline.toFixed(1)}</b>.
-    Δ is the 0–24h average minus baseline — red means pain runs higher than usual after that trigger.</p>
+    <p class="corr-note"><b>Δ after−before</b> compares each exposure against itself: average pain in the 24h <i>after</i> minus
+    the 24h <i>before</i> — red means pain reliably rises after that trigger. Window columns show average pain in each interval
+    after exposure (overall baseline: <b>${baseline.toFixed(1)}</b>). Faded values rest on fewer than ${MIN_N} readings —
+    treat them as anecdotes, not evidence.</p>
     <div class="corr-scroll">
       <table class="corr-table">
         <thead>
@@ -1156,49 +1682,119 @@ function renderCorrelation() {
             <th>Trigger</th>
             <th class="num">Logged</th>
             ${CORR_LABELS.map(l => `<th class="num">${l}</th>`).join('')}
-            <th class="num">Δ vs baseline</th>
+            <th class="num">Δ after−before</th>
           </tr>
         </thead>
         <tbody>
           ${rows.map(r => `
             <tr>
-              <td class="corr-trigger">${escapeHtml(r.item)}</td>
+              <td class="corr-trigger">${trigger(r)}</td>
               <td class="num dim">×${r.count}</td>
-              ${r.windows.map(v => `<td class="num">${heat(v)}</td>`).join('')}
-              <td class="num">${delta(r.delta)}</td>
+              ${r.windows.map(w => `<td class="num">${heat(w)}</td>`).join('')}
+              <td class="num">${paired(r)}</td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>`;
 }
 
+// ── Hour × Day heatmap ────────────────────────────────────────────────────────
+
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function renderHeatmap() {
+  const el = document.getElementById('heatmapContent');
+  const pain = loadPain();
+  if (pain.length < 5) {
+    el.innerHTML = '<p class="corr-note">Once you have a handful of pain logs, an hour-of-day × day-of-week heatmap appears here to reveal circadian and weekly patterns.</p>';
+    return;
+  }
+
+  const cells = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => ({ sum: 0, n: 0 })));
+  pain.forEach(e => {
+    const d = new Date(e.timestamp);
+    const c = cells[(d.getDay() + 6) % 7][d.getHours()];
+    c.sum += e.pain;
+    c.n++;
+  });
+
+  let html = '<div class="hm"><span></span>';
+  for (let h = 0; h < 24; h++) html += `<span class="hm-h">${h % 6 === 0 ? h : ''}</span>`;
+  cells.forEach((row, di) => {
+    html += `<span class="hm-d">${DOW[di]}</span>`;
+    row.forEach((c, h) => {
+      if (!c.n) {
+        html += '<span class="hm-c"></span>';
+      } else {
+        const avg = c.sum / c.n;
+        html += `<span class="hm-c" style="background:${painColor(avg)}" title="${DOW[di]} ${h}:00 — avg pain ${avg.toFixed(1)} (${c.n} log${c.n === 1 ? '' : 's'})"></span>`;
+      }
+    });
+  });
+  html += '</div><p class="corr-note">Average pain by hour of day (columns, 0–23) and day of week (rows). Hover a cell for details — clusters reveal circadian or weekly patterns worth mentioning to a doctor.</p>';
+  el.innerHTML = html;
+}
+
 // ── Recent ────────────────────────────────────────────────────────────────────
 
 function renderRecent() {
-  const painLog = loadPain().slice(-5).reverse();
-  const expLog  = loadExp().slice(-5).reverse();
+  const painCol = [
+    ...loadPain().map(e => ({ ...e, kind: 'pain' })),
+    ...loadDoses().map(e => ({ ...e, kind: 'dose' })),
+  ].sort((a, b) => +new Date(b.timestamp) - +new Date(a.timestamp)).slice(0, 6);
+  const expLog = loadExp().slice(-5).reverse();
 
   const painList = document.getElementById('recentPain');
   const expList  = document.getElementById('recentExposure');
 
-  painList.innerHTML = painLog.length
-    ? painLog.map(e => `<li class="ri">
-        <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
-        <span class="ri-pain" style="color:${painColor(e.pain)}">Pain ${e.pain}</span>
-        ${e.meds?.length ? `<br><span class="ri-meds">💊 ${escapeHtml(e.meds.join(', '))}</span>` : ''}
-      </li>`).join('')
+  painList.innerHTML = painCol.length
+    ? painCol.map(e => e.kind === 'dose'
+        ? `<li class="ri"><div class="ri-row"><div>
+            <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+            <span class="ri-meds">💊 Dose: ${escapeHtml(e.med)}</span>
+          </div><div class="ri-actions">
+            <button class="ri-btn" data-del-dose="${e.id}" title="Delete dose">✕</button>
+          </div></div></li>`
+        : `<li class="ri"><div class="ri-row"><div>
+            <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
+            <span class="ri-pain" style="color:${painColor(e.pain)}">Pain ${e.pain}</span>
+            ${e.meds?.length ? `<br><span class="ri-meds">💊 ${escapeHtml(e.meds.join(', '))}</span>` : ''}
+            ${e.weather ? `<br><span class="ri-ts">${fmtWeather(e.weather)}</span>` : ''}
+          </div><div class="ri-actions">
+            <button class="ri-btn" data-edit="${e.id}" title="Edit pain value">✎</button>
+            <button class="ri-btn" data-del-pain="${e.id}" title="Delete entry">✕</button>
+          </div></div></li>`).join('')
     : '<li class="empty">No entries yet</li>';
 
   expList.innerHTML = expLog.length
     ? expLog.map(e => {
         const ilbl = e.items.length ? escapeHtml(e.items.join(', ')) : '(no items)';
-        return `<li class="ri">
+        return `<li class="ri"><div class="ri-row"><div>
           <span class="ri-ts">${fmtTime(e.timestamp)}</span><br>
           <span class="ri-items">${ilbl}</span>
-        </li>`;
+        </div><div class="ri-actions">
+          <button class="ri-btn" data-del-exp="${e.id}" title="Delete entry">✕</button>
+        </div></div></li>`;
       }).join('')
     : '<li class="empty">No entries yet</li>';
 }
+
+document.querySelector('.recent-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.ri-btn');
+  if (!btn) return;
+  const d = btn.dataset;
+  if (d.delPain && confirm('Delete this pain entry?'))     { deleteEntry(PAIN_KEY, d.delPain); rerenderAll(); }
+  if (d.delExp  && confirm('Delete this exposure entry?')) { deleteEntry(EXP_KEY,  d.delExp);  rerenderAll(); }
+  if (d.delDose && confirm('Delete this dose entry?'))     { deleteEntry(DOSE_KEY, d.delDose); rerenderAll(); }
+  if (d.edit) {
+    const v = prompt('New pain value (1–10):');
+    if (v == null) return;
+    const n = Math.round(+v);
+    if (n >= 1 && n <= 10) { updatePainValue(d.edit, n); rerenderAll(); }
+    else alert('Enter a number from 1 to 10.');
+  }
+});
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
@@ -1211,35 +1807,210 @@ function download(content, filename, type) {
 }
 
 document.getElementById('expPainCsv').addEventListener('click', () => {
-  const rows = ['timestamp,pain,meds',
-    ...loadPain().map(e => `${e.timestamp},${e.pain},"${(e.meds || []).join('; ')}"`)];
+  const rows = ['timestamp,pain,meds,temp_c,humidity_pct,pressure_hpa,pollen',
+    ...loadPain().map(e => [
+      e.timestamp,
+      e.pain,
+      `"${(e.meds || []).join('; ')}"`,
+      e.weather?.tempC ?? '',
+      e.weather?.humidity ?? '',
+      e.weather?.pressure != null ? Math.round(e.weather.pressure) : '',
+      e.weather?.pollen ?? '',
+    ].join(','))];
   download(rows.join('\n'), 'sinus-pain-log.csv', 'text/csv');
 });
 
 document.getElementById('expExposureCsv').addEventListener('click', () => {
-  const rows = ['timestamp,items',
-    ...loadExp().map(e => `${e.timestamp},"${e.items.join(',')}"`
+  const rows = ['timestamp,hours_before,items',
+    ...loadExp().map(e => `${e.timestamp},${e.hoursBefore ?? ''},"${e.items.join(',')}"`
   )];
   download(rows.join('\n'), 'sinus-exposure-log.csv', 'text/csv');
 });
 
 document.getElementById('expJson').addEventListener('click', () => {
   download(
-    JSON.stringify({ painLog: loadPain(), exposureLog: loadExp(), medications: loadMeds() }, null, 2),
+    JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      painLog: loadPain(),
+      exposureLog: loadExp(),
+      medications: loadMeds(),
+      medDoses: loadDoses(),
+    }, null, 2),
     'sinus-tracker-export.json',
     'application/json'
   );
+  const s = loadSettings();
+  s.lastExportAt = new Date().toISOString();
+  saveSettings(s);
+  renderBackupNote();
+});
+
+// ── Import (merge by id) ──────────────────────────────────────────────────────
+
+const importFile = document.getElementById('importFile');
+document.getElementById('impJson').addEventListener('click', () => importFile.click());
+
+importFile.addEventListener('change', async () => {
+  const file = importFile.files[0];
+  importFile.value = '';
+  if (!file) return;
+
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch { alert('Could not read that file — it is not valid JSON.'); return; }
+
+  // Union by id: existing entries always win, so importing a backup is safe to
+  // repeat and works as a poor-man's sync between devices.
+  const merge = (key, incoming, isDup) => {
+    if (!Array.isArray(incoming)) return 0;
+    const list = loadList(key);
+    const ids = new Set(list.map(e => e.id));
+    let added = 0;
+    incoming.forEach(e => {
+      if (!e || typeof e !== 'object') return;
+      if (!e.id) e.id = uid();
+      if (ids.has(e.id) || (isDup && list.some(x => isDup(x, e)))) return;
+      list.push(e);
+      ids.add(e.id);
+      added++;
+    });
+    if (added) saveList(key, list);
+    return added;
+  };
+
+  const p = merge(PAIN_KEY, data.painLog);
+  const x = merge(EXP_KEY,  data.exposureLog);
+  const d = merge(DOSE_KEY, data.medDoses);
+  const m = merge(MEDS_KEY, data.medications,
+    (a, b) => a.name?.toLowerCase() === b.name?.toLowerCase());
+
+  renderMeds();
+  rerenderAll();
+  alert(`Imported ${p} pain, ${x} exposure, ${d} dose and ${m} medication entries. Duplicates were skipped.`);
+});
+
+// ── Backup status & weather toggle ────────────────────────────────────────────
+
+function renderBackupNote() {
+  const el = document.getElementById('backupNote');
+  const total = loadPain().length + loadExp().length + loadDoses().length;
+  const s = loadSettings();
+  if (!total) {
+    el.textContent = 'All data lives only in this browser. Once you start logging, back it up with the Full JSON export — it can be re-imported on any device.';
+    el.classList.remove('overdue');
+    return;
+  }
+  if (!s.lastExportAt) {
+    el.innerHTML = `<b>${total}</b> entries live only in this browser and are lost if site data is cleared — <b>no backup yet</b>. Download the Full JSON below (re-importable on any device).`;
+    el.classList.add('overdue');
+    return;
+  }
+  const days = Math.floor((Date.now() - +new Date(s.lastExportAt)) / DAY);
+  const overdue = days > 14;
+  el.innerHTML = `Last JSON backup: <b>${days === 0 ? 'today' : `${days} day${days === 1 ? '' : 's'} ago`}</b>.`
+    + (overdue ? ' Consider downloading a fresh one — this browser is the only copy of your data.' : '');
+  el.classList.toggle('overdue', overdue);
+}
+
+const weatherToggle = document.getElementById('weatherToggle');
+weatherToggle.checked = !!loadSettings().weather;
+
+weatherToggle.addEventListener('change', async () => {
+  const s = loadSettings();
+  if (weatherToggle.checked) {
+    try {
+      await getCoords();
+      s.weather = true;
+    } catch {
+      alert('Location permission is needed to look up local weather and pollen. The toggle stays off.');
+      weatherToggle.checked = false;
+      s.weather = false;
+    }
+  } else {
+    s.weather = false;
+  }
+  saveSettings(s);
+});
+
+// ── Doctor report ─────────────────────────────────────────────────────────────
+
+document.getElementById('expReport').addEventListener('click', () => {
+  const pain  = loadPain();
+  const doses = loadDoses();
+  const now   = Date.now();
+  const within = (e, days) => now - +new Date(e.timestamp) < days * DAY;
+  const avg = a => a.length ? a.reduce((s, e) => s + e.pain, 0) / a.length : null;
+  const fmtAvg = v => v == null ? '–' : v.toFixed(1);
+
+  const last30 = pain.filter(e => within(e, 30));
+  const prev30 = pain.filter(e => within(e, 60) && !within(e, 30));
+  const corr = computeCorrelations();
+
+  const trigRows = corr ? corr.rows.slice(0, 8).map(r => `
+    <tr><td>${escapeHtml(r.item)}</td><td>${r.count}</td>
+    <td>${r.pairedDelta == null ? '–' : (r.pairedDelta >= 0 ? '+' : '') + r.pairedDelta.toFixed(1)}</td>
+    <td>${r.pairedN}</td></tr>`).join('') : '';
+
+  const doseCounts = new Map();
+  doses.filter(d => within(d, 30)).forEach(d => doseCounts.set(d.med, (doseCounts.get(d.med) || 0) + 1));
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Pop-up blocked — allow pop-ups for this site to generate the report.'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Sinus Tracker — Summary Report</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1e293b; line-height: 1.5; }
+      h1 { font-size: 1.3rem; } h2 { font-size: 1rem; margin-top: 1.5rem; }
+      table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-top: 0.5rem; }
+      td, th { border: 1px solid #cbd5e1; padding: 0.35rem 0.5rem; text-align: left; }
+      .muted { color: #64748b; font-size: 0.85rem; }
+      button { margin-top: 1.5rem; padding: 0.5rem 1.25rem; font-size: 0.9rem; cursor: pointer; }
+      @media print { button { display: none; } }
+    </style></head><body>
+    <h1>Sinus Tracker — Summary Report</h1>
+    <p class="muted">Generated ${new Date().toLocaleDateString()} · ${pain.length} pain logs · ${loadExp().length} exposure logs · ${doses.length} med doses</p>
+    <h2>Pain levels (1–10 scale)</h2>
+    <table>
+      <tr><th>Period</th><th>Average</th><th>Readings</th></tr>
+      <tr><td>Last 30 days</td><td>${fmtAvg(avg(last30))}</td><td>${last30.length}</td></tr>
+      <tr><td>Previous 30 days</td><td>${fmtAvg(avg(prev30))}</td><td>${prev30.length}</td></tr>
+      <tr><td>All time</td><td>${fmtAvg(avg(pain))}</td><td>${pain.length}</td></tr>
+    </table>
+    ${corr ? `<h2>Suspected triggers</h2>
+    <p class="muted">Δ = average pain in the 24h after exposure minus the 24h before (each exposure paired against itself). n = exposures with pain data on both sides; small n means weak evidence.</p>
+    <table>
+      <tr><th>Trigger</th><th>Times logged</th><th>Δ after−before</th><th>n</th></tr>
+      ${trigRows}
+    </table>` : ''}
+    <h2>Medications</h2>
+    <p>Current stack: ${activeMedNames().map(escapeHtml).join(', ') || 'none'}</p>
+    ${doseCounts.size ? `<p>Doses logged in the last 30 days: ${[...doseCounts.entries()].map(([m, n]) => `${escapeHtml(m)} ×${n}`).join(', ')}</p>` : ''}
+    <button onclick="print()">Print</button>
+  </body></html>`);
+  w.document.close();
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
+migrate();
+
+// Ask the browser not to evict our storage under pressure (best-effort).
+if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// Another tab logged something — pick it up instead of overwriting it later.
+window.addEventListener('storage', e => {
+  if ([PAIN_KEY, EXP_KEY, MEDS_KEY, DOSE_KEY, null].includes(e.key)) {
+    renderMeds();
+    rerenderAll();
+  }
+});
+
 syncPain();
 syncHours();
 renderMeds();
-renderRecent();
-renderCorrelation();
-updateDatalist();
-refreshChart();
+rerenderAll();
 </script>
 </body>
 </html>
